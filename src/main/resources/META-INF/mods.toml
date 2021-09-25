@@ -1,0 +1,25 @@
+modLoader="javafml"
+loaderVersion="[36,)"
+issueTrackerURL="https://gitlab.com/Su5eD/koremods"
+license="MIT"
+
+[[mods]]
+    modId="koremods"
+    version="${file.jarVersion}"
+    displayName="Koremods"
+    displayURL="https://gitlab.com/Su5eD/koremods"
+    authors="Su5eD"
+    description="A coremodding framework running KTS/JSR-223"
+
+[[dependencies.koremods]]
+    modId="forge"
+    mandatory=true
+    versionRange="[36,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.koremods]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.16, 1.17)"
+    ordering="NONE"
+    side="BOTH"
