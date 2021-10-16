@@ -4,7 +4,7 @@ import cpw.mods.modlauncher.api.IEnvironment
 import cpw.mods.modlauncher.api.ITransformationService
 import cpw.mods.modlauncher.api.ITransformer
 import dev.su5ed.koremods.KoremodDiscoverer
-import dev.su5ed.koremods.preloadScriptEngine
+import dev.su5ed.koremods.preloadScriptHost
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.objectweb.asm.tree.ClassNode
@@ -38,7 +38,7 @@ class KoremodsTransformationService : ITransformationService {
     override fun beginScanning(environment: IEnvironment) {}
 
     override fun onLoad(env: IEnvironment, otherServices: Set<String>) {
-        preloadScriptEngine(logger)
+        preloadScriptHost(logger)
     }
 
     override fun transformers(): List<ITransformer<ClassNode>> {
