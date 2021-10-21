@@ -3,8 +3,8 @@ package dev.su5ed.koremods.modlaunch
 import cpw.mods.modlauncher.api.IEnvironment
 import cpw.mods.modlauncher.api.ITransformationService
 import cpw.mods.modlauncher.api.ITransformer
+import dev.su5ed.koremods.KoremodBlackboard
 import dev.su5ed.koremods.KoremodDiscoverer
-import dev.su5ed.koremods.preloadScriptHost
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.objectweb.asm.tree.ClassNode
@@ -24,6 +24,7 @@ class KoremodsTransformationService : ITransformationService {
             .orElseThrow { IllegalStateException("Could not find game directory") }
         
         val modsDir = gameDir.resolve("mods")
+        val cacheDir = modsDir.resolve("koremods").resolve("cache").toFile()
         val classpath = System.getenv("MOD_CLASSES")
             ?.split(File.pathSeparator)
             ?.map { it.split("%%").last() }
@@ -32,14 +33,14 @@ class KoremodsTransformationService : ITransformationService {
             ?.toTypedArray()
             ?: emptyArray()
         
+        cacheDir.mkdir()
+        KoremodBlackboard.cacheDir = cacheDir
         KoremodDiscoverer.discoverKoremods(modsDir, classpath)
     }
 
     override fun beginScanning(environment: IEnvironment) {}
 
-    override fun onLoad(env: IEnvironment, otherServices: Set<String>) {
-        preloadScriptHost(logger)
-    }
+    override fun onLoad(env: IEnvironment, otherServices: Set<String>) {}
 
     override fun transformers(): List<ITransformer<ClassNode>> {
         logger.info("Registering Koremods Transformer")
