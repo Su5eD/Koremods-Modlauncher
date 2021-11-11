@@ -3,8 +3,8 @@ package dev.su5ed.koremods.modlaunch
 import cpw.mods.modlauncher.api.IEnvironment
 import cpw.mods.modlauncher.api.ITransformationService
 import cpw.mods.modlauncher.api.ITransformer
-import dev.su5ed.koremods.KoremodBlackboard
 import dev.su5ed.koremods.KoremodDiscoverer
+import dev.su5ed.koremods.KoremodsBlackboard
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.objectweb.asm.tree.ClassNode
@@ -34,7 +34,7 @@ class KoremodsTransformationService : ITransformationService {
             ?: emptyArray()
         
         cacheDir.mkdir()
-        KoremodBlackboard.cacheDir = cacheDir
+        KoremodsBlackboard.cacheDir = cacheDir
         KoremodDiscoverer.discoverKoremods(modsDir, classpath)
     }
 
