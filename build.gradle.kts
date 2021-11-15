@@ -1,12 +1,17 @@
-import java.time.LocalDateTime
 import net.minecraftforge.gradle.common.util.RunConfig
+import java.time.LocalDateTime
 
 plugins {
     kotlin("jvm")
     id("net.minecraftforge.gradle") version "5.1.+"
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
 evaluationDependsOn(":script")
+
+val scriptProj = project(":script")
+val repackPackagePath: String by project
+val relocatePackages: ((String, String) -> Unit) -> Unit by scriptProj.extra
 
 minecraft {
     mappings("official", "1.16.5")
@@ -14,15 +19,24 @@ minecraft {
     runs {
         val config = Action<RunConfig> {
             properties(mapOf(
-                "forge.logging.markers" to "SCAN,REGISTRIES",
+                "forge.logging.markers" to "REGISTRIES",
                 "forge.logging.console.level" to "debug"
             ))
             workingDirectory = project.file("run").canonicalPath
-            source(sourceSets.main.get())
         }
 
         create("client", config)
         create("server", config)
+    }
+}
+
+configurations.mavenRuntime {
+    extendsFrom(scriptProj.configurations.mavenRuntime.get())
+}
+
+afterEvaluate { 
+    sourceSets.main {
+        runtimeClasspath = runtimeClasspath.filter { !output.files.contains(it) } + files(tasks["fullJar"])
     }
 }
 
@@ -33,7 +47,8 @@ repositories {
 dependencies {
     minecraft(group = "net.minecraftforge", name = "forge", version = "1.16.5-36.2.0")
     
-    implementation(project(":script"))
+    compileOnly(scriptProj)
+    compileOnly(scriptProj.sourceSets["splash"].output)
 }
 
 val manifestAttributes = mapOf(
@@ -48,16 +63,32 @@ val manifestAttributes = mapOf(
 
 tasks {
     jar {
+        dependsOn("fullJar")
+        isEnabled = false
+    }
+    
+    shadowJar {
+        configurations = emptyList()
+        
         manifest.attributes(manifestAttributes)
+        relocatePackages(::relocate)
+        
+        archiveClassifier.set("shade")
     }
     
     register<Jar>("fullJar") {
-        from(zipTree(jar.get().archiveFile))
-        from(zipTree(project(":script").tasks.getByName<Jar>("shadowJar").archiveFile))
+        val shadowJar = scriptProj.tasks.getByName<Jar>("shadowJar")
+        val kotlinDepsJar = scriptProj.tasks.getByName<Jar>("kotlinDepsJar")
+        dependsOn(project.tasks.shadowJar, shadowJar, kotlinDepsJar)
         
-        manifest.attributes(manifestAttributes)
+        from(zipTree(project.tasks.shadowJar.get().archiveFile))
+        from(zipTree(shadowJar.archiveFile))
+        from(kotlinDepsJar.archiveFile)
         
-        archiveClassifier.set("full")
+        manifest {
+            attributes(manifestAttributes)
+            attributes("Additional-Dependencies-Kotlin" to kotlinDepsJar.archiveFile.get().asFile.name)
+        }
     }
     
     processResources {
@@ -69,14 +100,9 @@ tasks {
     }
 }
 
-publishing {
-    publications { 
-        named<MavenPublication>(project.name) {
-            artifact(tasks.getByName("fullJar"))
-        }
+configurations.all { 
+    outgoing.artifacts.removeIf { 
+        it.buildDependencies.getDependencies(null).contains(tasks["jar"])
     }
-}
-
-artifacts { 
-    archives(tasks.getByName("fullJar"))
+    outgoing.artifact(tasks["fullJar"])
 }

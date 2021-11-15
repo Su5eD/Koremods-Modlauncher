@@ -28,7 +28,7 @@ import cpw.mods.modlauncher.api.ITransformer
 import cpw.mods.modlauncher.api.ITransformer.Target
 import cpw.mods.modlauncher.api.ITransformerVotingContext
 import cpw.mods.modlauncher.api.TransformerVoteResult
-import dev.su5ed.koremods.KoremodDiscoverer
+import dev.su5ed.koremods.KoremodsDiscoverer
 import dev.su5ed.koremods.dsl.Transformer
 import dev.su5ed.koremods.transformClass
 import org.objectweb.asm.tree.ClassNode
@@ -44,7 +44,7 @@ class KoremodsTransformer : ITransformer<ClassNode> {
     override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
 
     override fun targets(): Set<Target> {
-        return KoremodDiscoverer.getFlatTransformers()
+        return KoremodsDiscoverer.getFlatTransformers()
             .map(Transformer::targetClassName)
             .map(Target::targetClass)
             .toMutableSet()
