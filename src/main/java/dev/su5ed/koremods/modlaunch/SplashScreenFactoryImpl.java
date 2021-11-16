@@ -11,7 +11,10 @@ public class SplashScreenFactoryImpl implements SplashScreenFactory {
     @Override
     public SplashScreen createSplashScreen(KoremodsPrelaunch prelaunch) {
         SplashScreen splash = new KoremodsSplashScreen();
-        splash.init();
+        
+        splash.startThread();
+        splash.awaitInit();
+        
         return splash;
     }
 }
