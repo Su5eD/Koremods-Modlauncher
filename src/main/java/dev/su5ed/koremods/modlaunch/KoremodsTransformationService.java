@@ -34,12 +34,10 @@ import net.minecraftforge.versions.mcp.MCPVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class KoremodsTransformationService implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -58,34 +56,12 @@ public class KoremodsTransformationService implements ITransformationService {
         LOGGER.debug("Locating game directory");
         Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
-        String modClasses = System.getenv("MOD_CLASSES");
-        URL[] classpath = modClasses != null ? getClasspath(modClasses) : new URL[0];
-        
         try {
-            KoremodsPrelaunch prelaunch = new KoremodsPrelaunch(gameDir, classpath, MCPVersion.getMCVersion());
+            KoremodsPrelaunch prelaunch = new KoremodsPrelaunch(gameDir, MCPVersion.getMCVersion());
             prelaunch.launch(FMLLoader.getDist() == Dist.CLIENT ? SPLASH_FACTORY_CLASS : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    
-    private URL[] getClasspath(String modClasses) {
-        return Arrays.stream(modClasses.split(File.pathSeparator))
-                .map(s -> {
-                    String[] parts = s.split("%%");
-                    return parts[parts.length - 1];
-                })
-                .map(Paths::get)
-                .map(path -> {
-                    try {
-                        return path.toUri().toURL();
-                    } catch (MalformedURLException e) {
-                        LOGGER.catching(e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toArray(URL[]::new);
     }
 
     @Override
