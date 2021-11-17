@@ -7,9 +7,9 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
-evaluationDependsOn(":script")
+evaluationDependsOn(":koremods-script")
 
-val scriptProj = project(":script")
+val scriptProj = project(":koremods-script")
 val repackPackagePath: String by project
 val relocatePackages: ((String, String) -> Unit) -> Unit by scriptProj.extra
 
@@ -88,14 +88,6 @@ tasks {
         manifest {
             attributes(manifestAttributes)
             attributes("Additional-Dependencies-Kotlin" to kotlinDepsJar.archiveFile.get().asFile.name)
-        }
-    }
-    
-    processResources {
-        inputs.property("version", project.version)
-        
-        filesMatching("koremods.info") {
-            expand("version" to project.version)
         }
     }
 }

@@ -24,15 +24,18 @@
 
 package dev.su5ed.koremods.modlaunch;
 
+import net.minecraftforge.fml.StartupMessageManager;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod("koremods")
-public class Koremods { // TODO
+public class Koremods {
     private static final Logger LOGGER = LogManager.getLogger();
     
     public Koremods() {
         LOGGER.info("Mod Constructed");
+
+        StartupMessageManager.addModMessage("Koremods mod instance started successfully");
     }
 }
