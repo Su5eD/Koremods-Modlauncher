@@ -27,9 +27,11 @@ package dev.su5ed.koremods.modlaunch;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
+import dev.su5ed.koremods.prelaunch.KoremodsBlackboard;
 import dev.su5ed.koremods.prelaunch.KoremodsPrelaunch;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.progress.StartupMessageManager;
 import net.minecraftforge.versions.mcp.MCPVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,10 +60,14 @@ public class KoremodsTransformationService implements ITransformationService {
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
         try {
             KoremodsPrelaunch prelaunch = new KoremodsPrelaunch(gameDir, MCPVersion.getMCVersion());
-            prelaunch.launch(FMLLoader.getDist() == Dist.CLIENT ? SPLASH_FACTORY_CLASS : null);
+            prelaunch.launch(FMLLoader.getDist() == Dist.CLIENT ? SPLASH_FACTORY_CLASS : null, this::append);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    private void append(String message) {
+        StartupMessageManager.addModMessage("[" + KoremodsBlackboard.NAME + "] " + message);
     }
 
     @Override
