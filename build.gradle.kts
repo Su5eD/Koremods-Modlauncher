@@ -1,5 +1,4 @@
 import net.minecraftforge.gradle.common.util.RunConfig
-import java.time.LocalDateTime
 
 plugins {
     kotlin("jvm")
@@ -57,8 +56,7 @@ val manifestAttributes = mapOf(
     "Specification-Version" to 1,
     "Implementation-Title" to "Koremods-Modlauncher",
     "Implementation-Version" to project.version,
-    "Implementation-Vendor" to "Su5eD",
-    "Implementation-Timestamp" to LocalDateTime.now()
+    "Implementation-Vendor" to "Su5eD"
 )
 
 tasks {
