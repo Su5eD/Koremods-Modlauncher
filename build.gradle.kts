@@ -1,16 +1,69 @@
 import net.minecraftforge.gradle.common.util.RunConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import fr.brouillard.oss.jgitver.GitVersionCalculator
+import fr.brouillard.oss.jgitver.Strategies
+import java.util.Calendar
+
+buildscript {
+    dependencies { 
+        classpath(group = "fr.brouillard.oss", name = "jgitver", version = "0.14.0")
+    }
+}
 
 plugins {
     kotlin("jvm")
+    `maven-publish`
     id("net.minecraftforge.gradle") version "5.1.+"
-    id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("com.github.johnrengelman.shadow") version "7.1.0" apply false
+    id("org.cadixdev.licenser") version "0.6.1"
 }
 
-evaluationDependsOn(":koremods-script")
+group = "dev.su5ed.koremods"
+version = getGitVersion()
 
-val scriptProj = project(":koremods-script")
-val repackPackagePath: String by project
-val relocatePackages: ((String, String) -> Unit) -> Unit by scriptProj.extra
+val kotlinVersion: String by project
+
+val script: Configuration by configurations.creating {
+    attributes { 
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
+    }
+}
+val shadeKotlin: Configuration by configurations.creating
+
+val mavenRuntime: Configuration by configurations.creating
+val mavenDep: (Dependency?) -> Unit = { if (it != null) { mavenRuntime.dependencies.add(it) } }
+
+val manifestAttributes = mapOf(
+    "Specification-Title" to project.name,
+    "Specification-Vendor" to "Garden of Fancy",
+    "Specification-Version" to 1,
+    "Implementation-Title" to project.name,
+    "Implementation-Version" to project.version,
+    "Implementation-Vendor" to "Garden of Fancy"
+)
+
+configurations {
+    runtimeElements {
+        setExtendsFrom(emptySet())
+    }
+    
+    runtimeClasspath {
+        exclude(group = "org.jetbrains.kotlin")
+    }
+}
+
+afterEvaluate {
+    configurations.apiElements {
+        setExtendsFrom(setOf(script))
+        
+        outgoing.artifacts.clear()
+        outgoing.artifact(slimJar)
+    }
+}
+
+java {
+    withSourcesJar()
+}
 
 minecraft {
     mappings("official", "1.16.5")
@@ -29,70 +82,142 @@ minecraft {
     }
 }
 
-configurations.mavenRuntime {
-    extendsFrom(scriptProj.configurations.mavenRuntime.get())
-}
-
-afterEvaluate { 
-    sourceSets.main {
-        runtimeClasspath = runtimeClasspath.filter { !output.files.contains(it) } + files(tasks["fullJar"])
-    }
-}
-
 repositories {
+    mavenCentral()
     maven("https://su5ed.jfrog.io/artifactory/maven")
+    mavenLocal()
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.16.5-36.2.0")
-    
-    compileOnly(scriptProj)
-    compileOnly(scriptProj.sourceSets["splash"].output)
+    minecraft(group = "net.minecraftforge", name = "forge", version = "1.16.5-36.2.20")
+
+    shadeKotlin(kotlin("compiler-embeddable"))
+    shadeKotlin(kotlin("scripting-common"))
+    shadeKotlin(kotlin("scripting-jvm"))
+    mavenDep(shadeKotlin(kotlin("scripting-jvm-host")))
+    mavenDep(shadeKotlin(kotlin("stdlib")))
+    mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
+    shadeKotlin(kotlin("reflect"))
+
+    compileOnly(script(group = "dev.su5ed.koremods", name = "koremods-script", version = "0.1.+"))
 }
 
-val manifestAttributes = mapOf(
-    "Specification-Title" to "Koremods-Modlauncher",
-    "Specification-Vendor" to "Su5eD",
-    "Specification-Version" to 1,
-    "Implementation-Title" to "Koremods-Modlauncher",
-    "Implementation-Version" to project.version,
-    "Implementation-Vendor" to "Su5eD"
-)
+license {
+    header(file("NOTICE"))
+
+    properties {
+        set("year", Calendar.getInstance().get(Calendar.YEAR))
+        set("name", "Garden of Fancy")
+        set("app", "Koremods")
+    }
+}
+
+val kotlinDepsJar by tasks.creating(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class) {
+    configurations = listOf(shadeKotlin)
+    exclude("META-INF/versions/**")
+    
+    archiveBaseName.set("koremods-deps-kotlin")
+    archiveVersion.set(kotlinVersion)
+}
+
+val slimJar by tasks.creating(Jar::class) {
+    dependsOn("classes")
+    
+    from(sourceSets.main.get().output)
+    manifest.attributes(manifestAttributes)
+    
+    archiveClassifier.set("slim")
+}
 
 tasks {
     jar {
-        dependsOn("fullJar")
-        isEnabled = false
-    }
-    
-    shadowJar {
-        configurations = emptyList()
+        dependsOn(kotlinDepsJar)
+        val kotlinDeps = kotlinDepsJar.archiveFile
         
-        manifest.attributes(manifestAttributes)
-        relocatePackages(::relocate)
-        
-        archiveClassifier.set("shade")
-    }
-    
-    register<Jar>("fullJar") {
-        val shadowJar = scriptProj.tasks.getByName<Jar>("shadowJar")
-        val kotlinDepsJar = scriptProj.tasks.getByName<Jar>("kotlinDepsJar")
-        dependsOn(project.tasks.shadowJar, shadowJar, kotlinDepsJar)
-        
-        from(zipTree(project.tasks.shadowJar.get().archiveFile))
-        from(zipTree(shadowJar.archiveFile))
-        from(kotlinDepsJar.archiveFile)
-        
+        doFirst { from(zipTree(script.singleFile)) }
+        from(kotlinDeps)
+
         manifest {
             attributes(manifestAttributes)
-            attributes("Additional-Dependencies-Kotlin" to kotlinDepsJar.archiveFile.get().asFile.name)
+            attributes(
+                "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name
+            )
+        }
+    }
+    
+    processResources {
+        inputs.property("version", project.version)
+        
+        filesMatching("mcmod.info") {
+            expand("version" to project.version)
+        }
+    }
+    
+    withType<KotlinCompile> {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+    
+    withType<Wrapper> {
+        gradleVersion = "7.3"
+        distributionType = Wrapper.DistributionType.BIN
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>(project.name) {
+            from(components["java"])
+            
+            suppressAllPomMetadataWarnings()
+        }
+    }
+
+    repositories {
+        val ciJobToken = System.getenv("CI_JOB_TOKEN")
+        val deployToken = project.findProperty("DEPLOY_TOKEN") as String?
+        if (ciJobToken != null || deployToken != null) {
+            maven {
+                name = "GitLab"
+                url = uri("https://gitlab.com/api/v4/projects/29540985/packages/maven")
+
+                credentials(HttpHeaderCredentials::class) {
+                    if (ciJobToken != null) {
+                        name = "Job-Token"
+                        value = ciJobToken
+                    } else {
+                        name = "Deploy-Token"
+                        value = deployToken
+                    }
+                }
+                authentication {
+                    create("header", HttpHeaderAuthentication::class)
+                }
+            }
+        }
+
+        if (project.hasProperty("artifactoryPassword")) {
+            maven {
+                name = "artifactory"
+                url = uri("https://su5ed.jfrog.io/artifactory/maven")
+                credentials {
+                    username = project.properties["artifactoryUser"] as String
+                    password = project.properties["artifactoryPassword"] as String
+                }
+            }
         }
     }
 }
 
-configurations.all { 
-    outgoing.artifacts.removeIf { 
-        it.buildDependencies.getDependencies(null).contains(tasks["jar"])
+fun getGitVersion(): String {
+    val jgitver = GitVersionCalculator.location(rootDir)
+        .setNonQualifierBranches("master")
+        .setStrategy(Strategies.SCRIPT)
+        .setScript("print \"\${metadata.CURRENT_VERSION_MAJOR};\${metadata.CURRENT_VERSION_MINOR};\${metadata.CURRENT_VERSION_PATCH + metadata.COMMIT_DISTANCE}\"")
+    return jgitver.version
+}
+
+class ShadowBundlingCompatRule : AttributeCompatibilityRule<Bundling> {
+    override fun execute(details: CompatibilityCheckDetails<Bundling>) = with(details) {
+        if (consumerValue?.name == Bundling.SHADOWED && producerValue?.name == Bundling.EXTERNAL) compatible()
     }
-    outgoing.artifact(tasks["fullJar"])
 }
