@@ -22,22 +22,31 @@
  * SOFTWARE.
  */
 
-package dev.su5ed.koremods.modlaunch;
+package wtf.gofancy.koremods.modlaunch
 
-import dev.su5ed.koremods.api.SplashScreen;
-import dev.su5ed.koremods.prelaunch.KoremodsPrelaunch;
-import dev.su5ed.koremods.prelaunch.SplashScreenFactory;
-import dev.su5ed.koremods.splash.KoremodsSplashScreen;
+import cpw.mods.modlauncher.api.ITransformer
+import cpw.mods.modlauncher.api.ITransformer.Target
+import cpw.mods.modlauncher.api.ITransformerVotingContext
+import cpw.mods.modlauncher.api.TransformerVoteResult
+import org.objectweb.asm.tree.ClassNode
+import wtf.gofancy.koremods.KoremodsDiscoverer
+import wtf.gofancy.koremods.dsl.Transformer
+import wtf.gofancy.koremods.transformClass
 
-@SuppressWarnings("unused")
-public class SplashScreenFactoryImpl implements SplashScreenFactory {
+class KoremodsTransformer : ITransformer<ClassNode> {
     
-    @Override
-    public SplashScreen createSplashScreen(KoremodsPrelaunch prelaunch) {
-        SplashScreen splash = new KoremodsSplashScreen();
-        
-        splash.startOnThread();
-        
-        return splash;
+    override fun transform(node: ClassNode, context: ITransformerVotingContext): ClassNode {
+        // TODO Logging
+        transformClass(node.name, node)
+        return node
+    }
+
+    override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
+
+    override fun targets(): Set<Target> {
+        return KoremodsDiscoverer.getFlatTransformers()
+            .map(Transformer::targetClassName)
+            .map(Target::targetClass)
+            .toMutableSet()
     }
 }

@@ -22,17 +22,22 @@
  * SOFTWARE.
  */
 
-package dev.su5ed.koremods.modlaunch;
+package wtf.gofancy.koremods.modlaunch;
 
-import net.minecraftforge.fml.common.Mod;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import wtf.gofancy.koremods.api.SplashScreen;
+import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
+import wtf.gofancy.koremods.prelaunch.SplashScreenFactory;
+import wtf.gofancy.koremods.splash.KoremodsSplashScreen;
 
-@Mod("koremods")
-public class Koremods {
-    private static final Logger LOGGER = LogManager.getLogger();
+@SuppressWarnings("unused")
+public class SplashScreenFactoryImpl implements SplashScreenFactory {
     
-    public Koremods() {
-        LOGGER.info("Mod Constructed");
+    @Override
+    public SplashScreen createSplashScreen(KoremodsPrelaunch prelaunch) {
+        SplashScreen splash = new KoremodsSplashScreen();
+        
+        splash.startOnThread();
+        
+        return splash;
     }
 }

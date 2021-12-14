@@ -22,31 +22,17 @@
  * SOFTWARE.
  */
 
-package dev.su5ed.koremods.modlaunch
+package wtf.gofancy.koremods.modlaunch;
 
-import cpw.mods.modlauncher.api.ITransformer
-import cpw.mods.modlauncher.api.ITransformer.Target
-import cpw.mods.modlauncher.api.ITransformerVotingContext
-import cpw.mods.modlauncher.api.TransformerVoteResult
-import dev.su5ed.koremods.KoremodsDiscoverer
-import dev.su5ed.koremods.dsl.Transformer
-import dev.su5ed.koremods.transformClass
-import org.objectweb.asm.tree.ClassNode
+import net.minecraftforge.fml.common.Mod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-class KoremodsTransformer : ITransformer<ClassNode> {
+@Mod("koremods")
+public class Koremods {
+    private static final Logger LOGGER = LogManager.getLogger();
     
-    override fun transform(node: ClassNode, context: ITransformerVotingContext): ClassNode {
-        // TODO Logging
-        transformClass(node.name, node)
-        return node
-    }
-
-    override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
-
-    override fun targets(): Set<Target> {
-        return KoremodsDiscoverer.getFlatTransformers()
-            .map(Transformer::targetClassName)
-            .map(Target::targetClass)
-            .toMutableSet()
+    public Koremods() {
+        LOGGER.info("Mod Constructed");
     }
 }

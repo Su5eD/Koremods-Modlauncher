@@ -22,19 +22,19 @@
  * SOFTWARE.
  */
 
-package dev.su5ed.koremods.modlaunch;
+package wtf.gofancy.koremods.modlaunch;
 
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import dev.su5ed.koremods.prelaunch.KoremodsBlackboard;
-import dev.su5ed.koremods.prelaunch.KoremodsPrelaunch;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.progress.StartupMessageManager;
 import net.minecraftforge.versions.mcp.MCPVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard;
+import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -44,7 +44,7 @@ import java.util.Set;
 public class KoremodsTransformationService implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
-    private static final String SPLASH_FACTORY_CLASS = "dev.su5ed.koremods.modlaunch.SplashScreenFactoryImpl";
+    private static final String SPLASH_FACTORY_CLASS = "wtf.gofancy.koremods.modlaunch.SplashScreenFactoryImpl";
     
     @Override
     public String name() {

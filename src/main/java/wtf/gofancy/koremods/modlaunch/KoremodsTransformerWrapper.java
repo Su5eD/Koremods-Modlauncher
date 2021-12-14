@@ -22,20 +22,20 @@
  * SOFTWARE.
  */
 
-package dev.su5ed.koremods.modlaunch;
+package wtf.gofancy.koremods.modlaunch;
 
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
-import dev.su5ed.koremods.prelaunch.KoremodsPrelaunch;
 import net.minecraftforge.common.util.Lazy;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
+import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
 import java.util.Set;
 
 public class KoremodsTransformerWrapper implements ITransformer<ClassNode> {
-    private static final String TRANSFORMER_CLASS = "dev.su5ed.koremods.modlaunch.KoremodsTransformer";
+    private static final String TRANSFORMER_CLASS = "wtf.gofancy.koremods.modlaunch.KoremodsTransformer";
     private final Lazy<ITransformer<ClassNode>> actualTransformer = Lazy.of(() -> {
         try {
             Class<?> cls = KoremodsPrelaunch.dependencyClassLoader.loadClass(TRANSFORMER_CLASS);

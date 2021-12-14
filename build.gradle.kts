@@ -18,7 +18,7 @@ plugins {
     id("org.cadixdev.licenser") version "0.6.1"
 }
 
-group = "dev.su5ed.koremods"
+group = "wtf.gofancy.koremods"
 version = getGitVersion()
 
 val kotlinVersion: String by project
@@ -99,7 +99,7 @@ dependencies {
     mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
     shadeKotlin(kotlin("reflect"))
 
-    compileOnly(script(group = "dev.su5ed.koremods", name = "koremods-script", version = "0.1.+"))
+    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.+"))
 }
 
 license {
