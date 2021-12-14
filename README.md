@@ -1,13 +1,18 @@
-# Koremods
+# Koremods - Modlauncher
 
-A bytecode modification framework running KTS/JSR-223
+Modlauncher frontend for [Koremods](https://gitlab.com/gofancy/koremods/koremods), a bytecode modification framework running KTS/JSR-223.
 
-#### Note on syntax highlighting
-Until [KT-31176](https://youtrack.jetbrains.com/issue/KT-31176) is resolved, you need to build
-the project to enable syntax highlighting in `core.kts` scripts, either using the `build` gradle task or `Build > Build Project` idea action, depending on what `Build, Execution, Deployment > Build Tools > Gradle > Build and run using` is set to.
 
-## License
+Currently supported Minecraft versions: 1.16.x
 
-All files are licensed under the [MIT License](LICENSE), unless otherwise explicitly stated.
+### Usage
 
-The Ubuntu Regular font is licensed under the [Ubuntu font licence](http://font.ubuntu.com/ufl/).
+Minimum requirements:
+- Gradle 6 - required to properly consume dependency gradle metadata
+
+Declare the dependency in your build.gradle, replacing `<version>` with the desired version
+```groovy
+dependencies {
+    implementation group: 'wtf.gofancy.koremods', name: 'koremods-modlauncher', version: '<version>'
+}
+```
