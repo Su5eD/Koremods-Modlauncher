@@ -61,7 +61,7 @@ afterEvaluate {
     }
     
     sourceSets.main {
-        runtimeClasspath = runtimeClasspath.filter { !output.files.contains(it) } + files(tasks.jar)
+        runtimeClasspath = runtimeClasspath - output + files(tasks.jar)
     }
 }
 

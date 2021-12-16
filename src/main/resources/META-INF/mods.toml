@@ -7,7 +7,7 @@ license="MIT"
     modId="koremods"
     version="${file.jarVersion}"
     displayName="Koremods"
-    displayURL="https://gitlab.com/Su5eD/koremods"
+    displayURL="https://gitlab.com/gofancy/koremods"
     authors="Su5eD"
     description="A coremodding framework running KTS/JSR-223"
 

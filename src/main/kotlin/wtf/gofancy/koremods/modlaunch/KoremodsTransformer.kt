@@ -37,7 +37,7 @@ class KoremodsTransformer : ITransformer<ClassNode> {
     
     override fun transform(node: ClassNode, context: ITransformerVotingContext): ClassNode {
         // TODO Logging
-        transformClass(node.name, node)
+        transformClass(node.name.replace('/', '.'), node)
         return node
     }
 
