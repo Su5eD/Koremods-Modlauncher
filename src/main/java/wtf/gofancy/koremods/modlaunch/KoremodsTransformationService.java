@@ -27,13 +27,10 @@ package wtf.gofancy.koremods.modlaunch;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.fml.loading.progress.StartupMessageManager;
 import net.minecraftforge.versions.mcp.MCPVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard;
+import org.objectweb.asm.tree.ClassNode;
 import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
 import java.nio.file.Path;
@@ -44,7 +41,10 @@ import java.util.Set;
 public class KoremodsTransformationService implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
-    private static final String SPLASH_FACTORY_CLASS = "wtf.gofancy.koremods.modlaunch.SplashScreenFactoryImpl";
+    private static final String LAUNCH_PLUGIN_CLASS = "wtf.gofancy.koremods.modlaunch.KoremodsPlugin";
+    private static final String TRANSFORMER_CLASS = "wtf.gofancy.koremods.modlaunch.KoremodsTransformer";
+    
+    private static KoremodsPrelaunch prelaunch;
     
     @Override
     public String name() {
@@ -59,15 +59,11 @@ public class KoremodsTransformationService implements ITransformationService {
         Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
         try {
-            KoremodsPrelaunch prelaunch = new KoremodsPrelaunch(gameDir, MCPVersion.getMCVersion());
-            prelaunch.launch(FMLLoader.getDist() == Dist.CLIENT ? SPLASH_FACTORY_CLASS : null, this::append);
+            prelaunch = new KoremodsPrelaunch(gameDir, MCPVersion.getMCVersion());
+            prelaunch.launch(LAUNCH_PLUGIN_CLASS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    
-    private void append(String message) {
-        StartupMessageManager.addModMessage("[" + KoremodsBlackboard.NAME + "] " + message);
     }
 
     @Override
@@ -81,6 +77,17 @@ public class KoremodsTransformationService implements ITransformationService {
     public List<ITransformer> transformers() {
         LOGGER.info("Registering Koremods Transformer");
         
-        return Collections.singletonList(new KoremodsTransformerWrapper());
+        try {
+            Class<?> cls = prelaunch.getDependencyClassLoader().loadClass(TRANSFORMER_CLASS);
+            //noinspection unchecked
+            ITransformer<ClassNode> transformer = (ITransformer<ClassNode>) cls.newInstance();
+            return Collections.singletonList(transformer);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize KoremodsTransformer", e);
+        }
+    }
+
+    public static KoremodsPrelaunch getPrelaunch() {
+        return prelaunch;
     }
 }

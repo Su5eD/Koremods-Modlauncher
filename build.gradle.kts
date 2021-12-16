@@ -59,6 +59,10 @@ afterEvaluate {
         outgoing.artifacts.clear()
         outgoing.artifact(slimJar)
     }
+    
+    sourceSets.main {
+        runtimeClasspath = runtimeClasspath.filter { !output.files.contains(it) } + files(tasks.jar)
+    }
 }
 
 java {
@@ -99,7 +103,7 @@ dependencies {
     mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
     shadeKotlin(kotlin("reflect"))
 
-    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.+"))
+    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.10"))
 }
 
 license {

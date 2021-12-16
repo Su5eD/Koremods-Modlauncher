@@ -24,15 +24,41 @@
 
 package wtf.gofancy.koremods.modlaunch;
 
+import cpw.mods.modlauncher.TransformingClassLoader;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Mod("koremods")
 public class Koremods {
     private static final Logger LOGGER = LogManager.getLogger();
     
+    static {
+        TransformingClassLoader classLoader = (TransformingClassLoader) Koremods.class.getClassLoader();
+        classLoader.addTargetPackageFilter(s -> !s.startsWith("wtf.gofancy.koremods."));
+    }
+    
     public Koremods() {
         LOGGER.info("Mod Constructed");
+        
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
+    }
+    
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        ModList modList = ModList.get();
+        Map<String, Path> map = modList.getMods().stream()
+                .map(ModInfo::getModId)
+                .collect(Collectors.toMap(Function.identity(), modid -> modList.getModFileById(modid).getFile().getFilePath()));
+        
+        KoremodsTransformationService.getPrelaunch().getLaunchPlugin().verifyScriptPacks(map);
     }
 }
