@@ -22,30 +22,32 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.modlaunch;
+package wtf.gofancy.koremods.service;
 
-import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ITransformationService;
-import cpw.mods.modlauncher.api.ITransformer;
-import net.minecraftforge.versions.mcp.MCPVersion;
+import cpw.mods.modlauncher.api.*;
+import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.targets.CommonLaunchHandler;
+import net.minecraftforge.fml.loading.targets.CommonUserdevLaunchHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class KoremodsTransformationService implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
-    private static final String LAUNCH_PLUGIN_CLASS = "wtf.gofancy.koremods.modlaunch.KoremodsPlugin";
-    private static final String TRANSFORMER_CLASS = "wtf.gofancy.koremods.modlaunch.KoremodsTransformer";
-    
+    private static final String LAUNCH_PLUGIN_CLASS = "wtf.gofancy.koremods.service.KoremodsPlugin";
+    private static final String TRANSFORMER_CLASS = "wtf.gofancy.koremods.service.KoremodsTransformer";
+
     private static KoremodsPrelaunch prelaunch;
-    
+
     @Override
     public String name() {
         return SERVICE_NAME;
@@ -54,20 +56,50 @@ public class KoremodsTransformationService implements ITransformationService {
     @Override
     public void initialize(IEnvironment environment) {
         LOGGER.info("Setting up Koremods environment");
-        
+
         LOGGER.debug("Locating game directory");
         Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
+        String mcVersion = FMLLoader.versionInfo().mcVersion();
         try {
-            prelaunch = new KoremodsPrelaunch(gameDir, MCPVersion.getMCVersion());
-            prelaunch.launch(LAUNCH_PLUGIN_CLASS);
+            URL jarLocation = getCurrentLocation();
+            prelaunch = new KoremodsPrelaunch(gameDir, mcVersion, jarLocation);
+            
+            URL[] discoveryURLs = getModClasses(environment);
+            URL kotlinDep = prelaunch.extractDependency("Kotlin");
+            ClassLoader classLoader = new MLDependencyClassLoader(new URL[] { prelaunch.mainJarUrl, kotlinDep }, getClass().getClassLoader(), KoremodsPrelaunch.KOTLIN_DEP_PACKAGES);
+            prelaunch.launch(LAUNCH_PLUGIN_CLASS, discoveryURLs, classLoader);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+    
+    private URL[] getModClasses(IEnvironment environment) {
+        return environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get())
+                .flatMap(environment::findLaunchHandler)
+                .filter(CommonUserdevLaunchHandler.class::isInstance)
+                .flatMap(handler -> {
+                    List<List<Path>> otherModPaths = ((CommonLaunchHandler) handler).getMinecraftPaths().otherModPaths();
+                    return otherModPaths.size() > 0 ? Optional.of(otherModPaths.get(0).stream()
+                            .map(LamdbaExceptionUtils.rethrowFunction(path -> path.toUri().toURL()))
+                            .toArray(URL[]::new))
+                            : Optional.empty();
+                })
+                .orElseGet(() -> new URL[0]);
+    }
+    
+    public URL getCurrentLocation() throws URISyntaxException, MalformedURLException {
+        URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
+        // Thanks, SJH
+        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null).toURL();
+    }
 
     @Override
-    public void beginScanning(IEnvironment environment) {}
+    public List<Resource> completeScan(IModuleLayerManager layerManager) {
+        prelaunch.getLaunchPlugin().verifyScriptPacks();
+        
+        return List.of();
+    }
 
     @Override
     public void onLoad(IEnvironment env, Set<String> otherServices) {}
@@ -76,18 +108,14 @@ public class KoremodsTransformationService implements ITransformationService {
     @Override
     public List<ITransformer> transformers() {
         LOGGER.info("Registering Koremods Transformer");
-        
+
         try {
             Class<?> cls = prelaunch.getDependencyClassLoader().loadClass(TRANSFORMER_CLASS);
             //noinspection unchecked
-            ITransformer<ClassNode> transformer = (ITransformer<ClassNode>) cls.newInstance();
-            return Collections.singletonList(transformer);
+            ITransformer<ClassNode> transformer = (ITransformer<ClassNode>) cls.getConstructor().newInstance();
+            return List.of(transformer);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize KoremodsTransformer", e);
         }
-    }
-
-    public static KoremodsPrelaunch getPrelaunch() {
-        return prelaunch;
     }
 }

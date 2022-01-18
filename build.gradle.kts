@@ -1,8 +1,9 @@
-import net.minecraftforge.gradle.common.util.RunConfig
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
-import java.util.Calendar
+import net.minecraftforge.gradle.common.util.RunConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.*
 
 buildscript {
     dependencies { 
@@ -59,18 +60,15 @@ afterEvaluate {
         outgoing.artifacts.clear()
         outgoing.artifact(slimJar)
     }
-    
-    sourceSets.main {
-        runtimeClasspath = runtimeClasspath - output + files(tasks.jar)
-    }
 }
 
 java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
     withSourcesJar()
 }
 
 minecraft {
-    mappings("official", "1.16.5")
+    mappings("official", "1.18.1")
 
     runs {
         val config = Action<RunConfig> {
@@ -79,6 +77,11 @@ minecraft {
                 "forge.logging.console.level" to "debug"
             ))
             workingDirectory = project.file("run").canonicalPath
+            forceExit = false
+            
+            lazyToken("minecraft_classpath") {
+                tasks.jar.get().archiveFile.get().asFile.absolutePath
+            }
         }
 
         create("client", config)
@@ -93,7 +96,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.16.5-36.2.20")
+    minecraft(group = "net.minecraftforge", name = "fmlonly", version = "1.18.1-39.0.44")
 
     shadeKotlin(kotlin("compiler-embeddable"))
     shadeKotlin(kotlin("scripting-common"))
@@ -103,20 +106,20 @@ dependencies {
     mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
     shadeKotlin(kotlin("reflect"))
 
-    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.12"))
+    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.14"))
 }
 
 license {
     header(file("NOTICE"))
 
     properties {
-        set("year", Calendar.getInstance().get(Calendar.YEAR))
+        set("year", "2021-${Calendar.getInstance().get(Calendar.YEAR)}")
         set("name", "Garden of Fancy")
         set("app", "Koremods")
     }
 }
 
-val kotlinDepsJar by tasks.creating(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class) {
+val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     configurations = listOf(shadeKotlin)
     exclude("META-INF/versions/**")
     
@@ -149,6 +152,10 @@ tasks {
         }
     }
     
+    whenTaskAdded {
+        if(this.name == "prepareRuns") dependsOn(jar)
+    }
+    
     processResources {
         inputs.property("version", project.version)
         
@@ -158,7 +165,7 @@ tasks {
     }
     
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "17"
     }
     
     withType<Wrapper> {

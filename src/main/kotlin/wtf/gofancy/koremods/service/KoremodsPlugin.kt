@@ -22,10 +22,11 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.modlaunch
+package wtf.gofancy.koremods.service
 
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.fml.loading.progress.StartupMessageManager
+import net.minecraftforge.forgespi.language.IModInfo
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import wtf.gofancy.koremods.KoremodsDiscoverer
@@ -34,7 +35,6 @@ import wtf.gofancy.koremods.api.SplashScreen
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch
 import wtf.gofancy.koremods.splash.KoremodsSplashScreen
-import java.nio.file.Path
 
 class KoremodsPlugin : KoremodsLaunchPlugin {
     companion object {
@@ -56,8 +56,13 @@ class KoremodsPlugin : KoremodsLaunchPlugin {
         StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")
     }
 
-    override fun verifyScriptPacks(mods: Map<String, Path>) {
-        LOGGER.info("Verifying script packs")
+    override fun verifyScriptPacks() {
+        val modList = FMLLoader.getLoadingModList()
+        val mods = modList.mods
+            .map(IModInfo::getModId)
+            .associateWith { modid -> modList.getModFileById(modid).file.filePath }
+        
+        LOGGER.info("Verifying script packs") // TODO
 
         KoremodsDiscoverer.transformers.forEach { pack ->
             mods.forEach { (modid, source) ->

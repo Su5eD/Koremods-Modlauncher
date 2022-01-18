@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.modlaunch
+package wtf.gofancy.koremods.service
 
 import cpw.mods.modlauncher.api.ITransformer
 import cpw.mods.modlauncher.api.ITransformer.Target
