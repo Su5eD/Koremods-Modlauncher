@@ -25,7 +25,6 @@
 package wtf.gofancy.koremods.service;
 
 import cpw.mods.modlauncher.api.*;
-import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.targets.CommonLaunchHandler;
 import net.minecraftforge.fml.loading.targets.CommonUserdevLaunchHandler;
 import org.apache.logging.log4j.LogManager;
@@ -63,10 +62,9 @@ public class KoremodsTransformationService implements ITransformationService {
         LOGGER.debug("Locating game directory");
         Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
-        String mcVersion = FMLLoader.versionInfo().mcVersion();
         try {
             URL jarLocation = getCurrentLocation();
-            prelaunch = new KoremodsPrelaunch(gameDir, mcVersion, jarLocation);
+            prelaunch = new KoremodsPrelaunch(gameDir, jarLocation);
             
             URL[] discoveryURLs = getModClasses(environment);
             URL kotlinDep = prelaunch.extractDependency("Kotlin");
