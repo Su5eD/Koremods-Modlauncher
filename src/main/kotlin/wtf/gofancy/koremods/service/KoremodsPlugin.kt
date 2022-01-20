@@ -62,14 +62,14 @@ class KoremodsPlugin : KoremodsLaunchPlugin {
             .map(IModInfo::getModId)
             .associateWith { modid -> modList.getModFileById(modid).file.filePath }
         
-        LOGGER.info("Verifying script packs") // TODO
+        LOGGER.info("Verifying script packs")
 
-        KoremodsDiscoverer.transformers.forEach { pack ->
+        KoremodsDiscoverer.INSTANCE?.scriptPacks?.forEach { pack ->
             mods.forEach { (modid, source) ->
                 if (pack.namespace == modid && pack.path != source) {
-                    LOGGER.error("Source location of namespace ${pack.namespace} doesn't match the location of its mod")
+                    LOGGER.error("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
                 } else if (pack.path == source && pack.namespace != modid) {
-                    LOGGER.error("Namespace ${pack.namespace} doesn't match the modid $modid found within at the same location")
+                    LOGGER.error("Namespace '${pack.namespace}' doesn't match the modid '$modid' found within at the same location")
                 }
             }
         }

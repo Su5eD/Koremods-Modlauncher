@@ -43,10 +43,10 @@ class KoremodsTransformer : ITransformer<ClassNode> {
 
     override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
 
-    override fun targets(): Set<Target> {
-        return KoremodsDiscoverer.getFlatTransformers()
-            .map(Transformer::targetClassName)
-            .map(Target::targetClass)
-            .toMutableSet()
+    override fun targets(): Set<Target> { 
+        return (KoremodsDiscoverer.INSTANCE?.getFlatTransformers() ?: emptyList())
+          .map(Transformer::targetClassName)
+          .map(Target::targetClass)
+          .toMutableSet()
     }
 }

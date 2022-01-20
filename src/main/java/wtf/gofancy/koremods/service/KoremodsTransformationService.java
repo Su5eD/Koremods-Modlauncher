@@ -45,6 +45,9 @@ public class KoremodsTransformationService implements ITransformationService {
     private static final String SERVICE_NAME = "koremods.asm.service";
     private static final String LAUNCH_PLUGIN_CLASS = "wtf.gofancy.koremods.service.KoremodsPlugin";
     private static final String TRANSFORMER_CLASS = "wtf.gofancy.koremods.service.KoremodsTransformer";
+    private static final String[] LIBRARIES = new String[] {
+            "asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util"
+    };
 
     private static KoremodsPrelaunch prelaunch;
 
@@ -68,30 +71,10 @@ public class KoremodsTransformationService implements ITransformationService {
             URL[] discoveryURLs = getModClasses(environment);
             URL kotlinDep = prelaunch.extractDependency("Kotlin");
             ClassLoader classLoader = new MLDependencyClassLoader(new URL[] { prelaunch.mainJarUrl, kotlinDep }, getClass().getClassLoader(), KoremodsPrelaunch.KOTLIN_DEP_PACKAGES);
-            prelaunch.launch(LAUNCH_PLUGIN_CLASS, discoveryURLs, classLoader);
+            prelaunch.launch(LAUNCH_PLUGIN_CLASS, discoveryURLs, LIBRARIES, classLoader);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    
-    private URL[] getModClasses(IEnvironment environment) {
-        return environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get())
-                .flatMap(environment::findLaunchHandler)
-                .filter(CommonUserdevLaunchHandler.class::isInstance)
-                .flatMap(handler -> {
-                    List<List<Path>> otherModPaths = ((CommonLaunchHandler) handler).getMinecraftPaths().otherModPaths();
-                    return otherModPaths.size() > 0 ? Optional.of(otherModPaths.get(0).stream()
-                            .map(LamdbaExceptionUtils.rethrowFunction(path -> path.toUri().toURL()))
-                            .toArray(URL[]::new))
-                            : Optional.empty();
-                })
-                .orElseGet(() -> new URL[0]);
-    }
-    
-    public URL getCurrentLocation() throws URISyntaxException, MalformedURLException {
-        URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
-        // Thanks, SJH
-        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null).toURL();
     }
 
     @Override
@@ -117,5 +100,25 @@ public class KoremodsTransformationService implements ITransformationService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize KoremodsTransformer", e);
         }
+    }
+
+    private URL[] getModClasses(IEnvironment environment) {
+        return environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get())
+                .flatMap(environment::findLaunchHandler)
+                .filter(CommonUserdevLaunchHandler.class::isInstance)
+                .flatMap(handler -> {
+                    List<List<Path>> otherModPaths = ((CommonLaunchHandler) handler).getMinecraftPaths().otherModPaths();
+                    return otherModPaths.size() > 0 ? Optional.of(otherModPaths.get(0).stream()
+                            .map(LamdbaExceptionUtils.rethrowFunction(path -> path.toUri().toURL()))
+                            .toArray(URL[]::new))
+                            : Optional.empty();
+                })
+                .orElseGet(() -> new URL[0]);
+    }
+
+    public URL getCurrentLocation() throws URISyntaxException, MalformedURLException {
+        URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
+        // Thanks, SJH
+        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null).toURL();
     }
 }

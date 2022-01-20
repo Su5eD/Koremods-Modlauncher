@@ -106,7 +106,7 @@ dependencies {
     mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
     shadeKotlin(kotlin("reflect"))
 
-    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.14"))
+    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.15"))
 }
 
 license {
