@@ -56,16 +56,19 @@ public class KoremodsTransformationService implements ITransformationService {
     }
 
     @Override
-    public void initialize(IEnvironment environment) {
-        LOGGER.info("Setting up Koremods environment");
+    public void initialize(IEnvironment environment) {}
 
+    @Override
+    public List<Resource> beginScanning(IEnvironment environment) {
+        LOGGER.info("Setting up Koremods environment");
+        
         LOGGER.debug("Locating game directory");
         Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
                 .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
         try {
             URL jarLocation = getCurrentLocation();
             prelaunch = new KoremodsPrelaunch(gameDir, jarLocation);
-            
+
             URL[] discoveryURLs = getModClasses(environment);
             URL kotlinDep = prelaunch.extractDependency("Kotlin");
             ClassLoader classLoader = new MLDependencyClassLoader(new URL[] { prelaunch.mainJarUrl, kotlinDep }, getClass().getClassLoader(), KoremodsPrelaunch.KOTLIN_DEP_PACKAGES);
@@ -73,6 +76,8 @@ public class KoremodsTransformationService implements ITransformationService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        
+        return List.of();
     }
 
     @Override
