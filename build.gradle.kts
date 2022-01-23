@@ -40,7 +40,8 @@ val manifestAttributes = mapOf(
     "Specification-Version" to 1,
     "Implementation-Title" to project.name,
     "Implementation-Version" to project.version,
-    "Implementation-Vendor" to "Garden of Fancy"
+    "Implementation-Vendor" to "Garden of Fancy",
+    "FMLModType" to "LIBRARY"
 )
 
 configurations {
@@ -96,7 +97,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "fmlonly", version = "1.18.1-39.0.44")
+    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.1-39.0.59")
 
     shadeKotlin(kotlin("compiler-embeddable"))
     shadeKotlin(kotlin("scripting-common"))
