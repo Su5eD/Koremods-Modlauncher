@@ -36,10 +36,8 @@ import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch
 import wtf.gofancy.koremods.splash.KoremodsSplashScreen
 
-class KoremodsPlugin : KoremodsLaunchPlugin {
-    companion object {
-        private val LOGGER = LogManager.getLogger()
-    }
+object KoremodsPlugin : KoremodsLaunchPlugin {
+    private val LOGGER = LogManager.getLogger()
     
     override fun shouldEnableSplashScreen(): Boolean = FMLLoader.getDist().isClient
 
@@ -56,7 +54,7 @@ class KoremodsPlugin : KoremodsLaunchPlugin {
         StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")
     }
 
-    override fun verifyScriptPacks() {
+    internal fun verifyScriptPacks() {
         val modList = FMLLoader.getLoadingModList()
         val mods = modList.mods
             .map(IModInfo::getModId)

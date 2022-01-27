@@ -57,9 +57,9 @@ public class MLDependencyClassLoader extends DependencyClassLoader {
         return Stream.concat(
                 Arrays.stream(super.getURLs()),
                 Arrays.stream(parts)
-                        .map(LamdbaExceptionUtils.rethrowFunction(path -> new File(path).toURI().toURL()))
-        )
-                .distinct()
-                .toArray(URL[]::new);
+                    .map(LamdbaExceptionUtils.rethrowFunction(path -> new File(path).toURI().toURL()))
+            )
+            .distinct()
+            .toArray(URL[]::new);
     }
 }

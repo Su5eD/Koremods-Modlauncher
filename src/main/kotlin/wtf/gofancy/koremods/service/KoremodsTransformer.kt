@@ -33,20 +33,19 @@ import wtf.gofancy.koremods.KoremodsDiscoverer
 import wtf.gofancy.koremods.dsl.Transformer
 import wtf.gofancy.koremods.transformClass
 
-class KoremodsTransformer : ITransformer<ClassNode> {
+object KoremodsTransformer : ITransformer<ClassNode> {
     
     override fun transform(node: ClassNode, context: ITransformerVotingContext): ClassNode {
-        // TODO Logging
         transformClass(node.name.replace('/', '.'), node)
         return node
     }
 
     override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
 
-    override fun targets(): Set<Target> { 
+    override fun targets(): Set<Target> {
         return (KoremodsDiscoverer.INSTANCE?.getFlatTransformers() ?: emptyList())
           .map(Transformer::targetClassName)
-          .map(Target::targetClass)
-          .toMutableSet()
+          .map(Target::targetClass) // TODO Separate target types
+          .toSet()
     }
 }
