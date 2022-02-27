@@ -24,12 +24,13 @@
 
 package wtf.gofancy.koremods.service
 
+import cpw.mods.modlauncher.api.ITransformer
 import cpw.mods.modlauncher.api.ITransformer.Target
 import cpw.mods.modlauncher.api.ITransformerVotingContext
 import org.objectweb.asm.tree.FieldNode
 import wtf.gofancy.koremods.dsl.FieldTransformer
 
-class KoremodsFieldTransformer : KoremodsBaseTransformer<FieldNode, KoremodsFieldTransformer.FieldKey, FieldTransformer>(FieldTransformer::class.java) {
+class KoremodsFieldTransformer : KoremodsBaseTransformer<FieldNode, KoremodsFieldTransformer.FieldKey, FieldTransformer>(FieldTransformer::class.java), ITransformer<FieldNode> {
     override fun groupKeys(input: FieldTransformer): FieldKey = FieldKey(input.targetClassName, input.name)
 
     override fun getKey(input: FieldNode, context: ITransformerVotingContext): FieldKey = FieldKey(context.className, input.name) 

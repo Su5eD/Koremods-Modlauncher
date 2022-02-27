@@ -11,9 +11,6 @@ import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch
 import java.net.URL
 
 class KoremodsTransformationService(private val prelaunch: KoremodsPrelaunch) : ITransformationService {
-    companion object {
-        private val LIBRARIES = arrayOf("asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util")
-    }
 
     override fun name(): String = throw UnsupportedOperationException()
 
@@ -22,7 +19,7 @@ class KoremodsTransformationService(private val prelaunch: KoremodsPrelaunch) : 
     override fun beginScanning(environment: IEnvironment): List<ITransformationService.Resource> {
         val discoveryURLs = getModClasses(environment)
 
-        KoremodsLaunch.launch(prelaunch, discoveryURLs, LIBRARIES, KoremodsPlugin)
+        KoremodsLaunch.launch(prelaunch, discoveryURLs, KoremodsPrelaunch.ASM_DEP_NAMES, KoremodsPlugin)
 
         return emptyList()
     }
