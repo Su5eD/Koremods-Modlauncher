@@ -1,9 +1,9 @@
 # Koremods - Modlauncher
 
-Modlauncher frontend for [Koremods](https://gitlab.com/gofancy/koremods/koremods), a bytecode modification framework running KTS/JSR-223.
+Modlauncher frontend for [Koremods](https://gitlab.com/gofancy/koremods/koremods), a Kotlin Script bytecode manipulation framework 
 
 
-Currently supported Minecraft versions: 1.16.x
+Currently supported Minecraft versions: 1.18.x
 
 ### Usage
 

@@ -124,6 +124,10 @@ val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     configurations = listOf(shadeKotlin)
     exclude("META-INF/versions/**")
     
+    dependencies { 
+        exclude(dependency("net.java.dev.jna:jna"))
+    }
+    
     archiveBaseName.set("koremods-deps-kotlin")
     archiveVersion.set(kotlinVersion)
 }
