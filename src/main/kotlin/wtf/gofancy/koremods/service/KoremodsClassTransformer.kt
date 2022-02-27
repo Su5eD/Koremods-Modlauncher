@@ -24,28 +24,15 @@
 
 package wtf.gofancy.koremods.service
 
-import cpw.mods.modlauncher.api.ITransformer
 import cpw.mods.modlauncher.api.ITransformer.Target
 import cpw.mods.modlauncher.api.ITransformerVotingContext
-import cpw.mods.modlauncher.api.TransformerVoteResult
 import org.objectweb.asm.tree.ClassNode
-import wtf.gofancy.koremods.KoremodsDiscoverer
-import wtf.gofancy.koremods.dsl.Transformer
-import wtf.gofancy.koremods.transformClass
+import wtf.gofancy.koremods.dsl.ClassTransformer
 
-object KoremodsTransformer : ITransformer<ClassNode> {
-    
-    override fun transform(node: ClassNode, context: ITransformerVotingContext): ClassNode {
-        transformClass(node.name.replace('/', '.'), node)
-        return node
-    }
+class KoremodsClassTransformer : KoremodsBaseTransformer<ClassNode, String, ClassTransformer>(ClassTransformer::class.java) {
+    override fun groupKeys(input: ClassTransformer): String = input.targetClassName
 
-    override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
+    override fun getKey(input: ClassNode, context: ITransformerVotingContext): String = input.name
 
-    override fun targets(): Set<Target> {
-        return (KoremodsDiscoverer.INSTANCE?.getFlatTransformers() ?: emptyList())
-          .map(Transformer::targetClassName)
-          .map(Target::targetClass) // TODO Separate target types
-          .toSet()
-    }
+    override fun getTarget(key: String): Target = Target.targetClass(key)
 }

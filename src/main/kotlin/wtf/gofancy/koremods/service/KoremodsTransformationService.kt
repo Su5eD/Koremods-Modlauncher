@@ -21,27 +21,31 @@ class KoremodsTransformationService(private val prelaunch: KoremodsPrelaunch) : 
 
     override fun beginScanning(environment: IEnvironment): List<ITransformationService.Resource> {
         val discoveryURLs = getModClasses(environment)
-        
+
         KoremodsLaunch.launch(prelaunch, discoveryURLs, LIBRARIES, KoremodsPlugin)
-        
+
         return emptyList()
     }
 
     override fun completeScan(layerManager: IModuleLayerManager): List<ITransformationService.Resource> {
         KoremodsPlugin.verifyScriptPacks()
-        
+
         return emptyList()
     }
 
     override fun onLoad(env: IEnvironment, otherServices: Set<String>) {}
 
-    override fun transformers(): List<ITransformer<*>> = listOf(KoremodsTransformer)
+    override fun transformers(): List<ITransformer<*>> = listOf(
+        KoremodsClassTransformer(),
+        KoremodsMethodTransformer(),
+        KoremodsFieldTransformer()
+    )
 
     private fun getModClasses(environment: IEnvironment): Array<URL> {
         return environment.getProperty(IEnvironment.Keys.LAUNCHTARGET.get())
             .flatMap(environment::findLaunchHandler)
             .filter { it is CommonUserdevLaunchHandler }
-            .map<Array<URL>?> { handler -> 
+            .map<Array<URL>?> { handler ->
                 (handler as CommonLaunchHandler).minecraftPaths.otherModPaths.firstOrNull()
                     ?.map { path -> path.toUri().toURL() }
                     ?.toTypedArray()

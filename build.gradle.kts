@@ -97,7 +97,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.1-39.0.59")
+    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.1-39.0.88")
 
     shadeKotlin(kotlin("compiler-embeddable"))
     shadeKotlin(kotlin("scripting-common"))
@@ -107,7 +107,7 @@ dependencies {
     mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
     shadeKotlin(kotlin("reflect"))
 
-    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.22"))
+    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.25"))
 }
 
 license {
