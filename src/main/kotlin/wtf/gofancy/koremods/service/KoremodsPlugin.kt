@@ -31,24 +31,12 @@ import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import wtf.gofancy.koremods.KoremodsDiscoverer
 import wtf.gofancy.koremods.api.KoremodsLaunchPlugin
-import wtf.gofancy.koremods.api.SplashScreen
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
-import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch
-import wtf.gofancy.koremods.splash.KoremodsSplashScreen
 
 object KoremodsPlugin : KoremodsLaunchPlugin {
     private val LOGGER = LogManager.getLogger()
     
     override fun shouldEnableSplashScreen(): Boolean = FMLLoader.getDist().isClient
-
-    override fun createSplashScreen(prelaunch: KoremodsPrelaunch): SplashScreen {
-        val logger = KoremodsBlackboard.createLogger("Splash")
-        val splash: SplashScreen = KoremodsSplashScreen(logger)
-        
-        splash.startOnThread()
-        
-        return splash
-    }
 
     override fun appendLogMessage(level: Level, message: String) {
         StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")

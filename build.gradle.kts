@@ -3,10 +3,11 @@ import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.*
 
 buildscript {
-    dependencies { 
+    dependencies {
         classpath(group = "fr.brouillard.oss", name = "jgitver", version = "0.14.0")
     }
 }
@@ -31,9 +32,6 @@ val script: Configuration by configurations.creating {
 }
 val shadeKotlin: Configuration by configurations.creating
 
-val mavenRuntime: Configuration by configurations.creating
-val mavenDep: (Dependency?) -> Unit = { if (it != null) { mavenRuntime.dependencies.add(it) } }
-
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
     "Specification-Vendor" to "Garden of Fancy",
@@ -45,21 +43,25 @@ val manifestAttributes = mapOf(
 )
 
 configurations {
+    compileOnly {
+        extendsFrom(script)
+    }
+
     runtimeElements {
         setExtendsFrom(emptySet())
     }
     
-    runtimeClasspath {
-        exclude(group = "org.jetbrains.kotlin")
-    }
-}
-
-afterEvaluate {
-    configurations.apiElements {
+    apiElements {
         setExtendsFrom(setOf(script))
         
-        outgoing.artifacts.clear()
-        outgoing.artifact(slimJar)
+        afterEvaluate {
+            outgoing.artifacts.clear()
+            outgoing.artifact(slimJar)
+        }
+    }
+
+    runtimeClasspath {
+        exclude(group = "org.jetbrains.kotlin")
     }
 }
 
@@ -73,13 +75,15 @@ minecraft {
 
     runs {
         val config = Action<RunConfig> {
-            properties(mapOf(
-                "forge.logging.markers" to "REGISTRIES",
-                "forge.logging.console.level" to "debug"
-            ))
+            properties(
+                mapOf(
+                    "forge.logging.markers" to "REGISTRIES",
+                    "forge.logging.console.level" to "debug"
+                )
+            )
             workingDirectory = project.file("run").canonicalPath
             forceExit = false
-            
+
             lazyToken("minecraft_classpath") {
                 tasks.jar.get().archiveFile.get().asFile.absolutePath
             }
@@ -97,21 +101,23 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.1-39.0.88")
+    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.2-40.0.36")
 
-    shadeKotlin(kotlin("compiler-embeddable"))
+    shadeKotlin(kotlin("stdlib"))
+    shadeKotlin(kotlin("stdlib-jdk8"))
+    shadeKotlin(kotlin("reflect"))
     shadeKotlin(kotlin("scripting-common"))
     shadeKotlin(kotlin("scripting-jvm"))
-    mavenDep(shadeKotlin(kotlin("scripting-jvm-host")))
-    mavenDep(shadeKotlin(kotlin("stdlib")))
-    mavenDep(shadeKotlin(kotlin("stdlib-jdk8")))
-    shadeKotlin(kotlin("reflect"))
+    shadeKotlin(kotlin("scripting-jvm-host")).cast<ExternalModuleDependency>().run {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-scripting-compiler-embeddable")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
+    }
 
-    compileOnly(script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.1.25"))
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.2")
 }
 
 license {
-    header(file("NOTICE"))
+    header("NOTICE")
 
     properties {
         set("year", "2021-${Calendar.getInstance().get(Calendar.YEAR)}")
@@ -123,21 +129,21 @@ license {
 val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     configurations = listOf(shadeKotlin)
     exclude("META-INF/versions/**")
-    
-    dependencies { 
+
+    dependencies {
         exclude(dependency("net.java.dev.jna:jna"))
     }
-    
+
     archiveBaseName.set("koremods-deps-kotlin")
     archiveVersion.set(kotlinVersion)
 }
 
 val slimJar by tasks.creating(Jar::class) {
     dependsOn("classes")
-    
+
     from(sourceSets.main.get().output)
     manifest.attributes(manifestAttributes)
-    
+
     archiveClassifier.set("slim")
 }
 
@@ -156,25 +162,17 @@ tasks {
             )
         }
     }
-    
+
     whenTaskAdded {
-        if(this.name == "prepareRuns") dependsOn(jar)
+        if (name == "prepareRuns") dependsOn(jar)
     }
-    
-    processResources {
-        inputs.property("version", project.version)
-        
-        filesMatching("mcmod.info") {
-            expand("version" to project.version)
-        }
-    }
-    
+
     withType<KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
     }
-    
+
     withType<Wrapper> {
-        gradleVersion = "7.3"
+        gradleVersion = "7.4.2"
         distributionType = Wrapper.DistributionType.BIN
     }
 }
@@ -183,7 +181,7 @@ publishing {
     publications {
         create<MavenPublication>(project.name) {
             from(components["java"])
-            
+
             suppressAllPomMetadataWarnings()
         }
     }
@@ -194,7 +192,7 @@ publishing {
         if (ciJobToken != null || deployToken != null) {
             maven {
                 name = "GitLab"
-                url = uri("https://gitlab.com/api/v4/projects/29540985/packages/maven")
+                url = uri("https://gitlab.com/api/v4/projects/32090725/packages/maven")
 
                 credentials(HttpHeaderCredentials::class) {
                     if (ciJobToken != null) {
@@ -230,10 +228,4 @@ fun getGitVersion(): String {
         .setStrategy(Strategies.SCRIPT)
         .setScript("print \"\${metadata.CURRENT_VERSION_MAJOR};\${metadata.CURRENT_VERSION_MINOR};\${metadata.CURRENT_VERSION_PATCH + metadata.COMMIT_DISTANCE}\"")
     return jgitver.version
-}
-
-class ShadowBundlingCompatRule : AttributeCompatibilityRule<Bundling> {
-    override fun execute(details: CompatibilityCheckDetails<Bundling>) = with(details) {
-        if (consumerValue?.name == Bundling.SHADOWED && producerValue?.name == Bundling.EXTERNAL) compatible()
-    }
 }

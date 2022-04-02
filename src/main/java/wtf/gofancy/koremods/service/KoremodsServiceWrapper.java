@@ -32,7 +32,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
-import java.lang.reflect.Proxy;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -66,11 +65,7 @@ public class KoremodsServiceWrapper implements ITransformationService {
             ClassLoader classLoader = new MLDependencyClassLoader(new URL[] { prelaunch.mainJarUrl, kotlinDep }, parentCL, KoremodsPrelaunch.KOTLIN_DEP_PACKAGES);
 
             Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor(KoremodsPrelaunch.class).newInstance(prelaunch);
-            this.actualTransformationService = (ITransformationService) Proxy.newProxyInstance(
-                parentCL,
-                new Class[] { ITransformationService.class },
-                (proxy, method, args) -> method.invoke(actualITS, args)
-            );
+            this.actualTransformationService = (ITransformationService) actualITS;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

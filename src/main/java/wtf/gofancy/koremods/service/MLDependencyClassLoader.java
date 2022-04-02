@@ -40,16 +40,6 @@ public class MLDependencyClassLoader extends DependencyClassLoader {
     }
 
     @Override
-    protected Class<?> loadClassFallback(String name, boolean resolve) throws ClassNotFoundException {
-        try {
-            return super.loadClassFallback(name, resolve);
-        } catch (StringIndexOutOfBoundsException ignored) {
-            // https://github.com/McModLauncher/securejarhandler/issues/21
-            throw new ClassNotFoundException();
-        }
-    }
-
-    @Override
     public URL[] getURLs() {
         String legacyClassPath = System.getProperty("legacyClassPath", "");
         String[] parts = legacyClassPath.split(File.pathSeparator);

@@ -30,7 +30,7 @@ import cpw.mods.modlauncher.api.ITransformerVotingContext
 import org.objectweb.asm.tree.ClassNode
 import wtf.gofancy.koremods.dsl.ClassTransformer
 
-class KoremodsClassTransformer : KoremodsBaseTransformer<ClassNode, String, ClassTransformer>(ClassTransformer::class.java), ITransformer<ClassNode> {
+object KoremodsClassTransformer : KoremodsBaseTransformer<ClassNode, String, ClassTransformer>(ClassTransformer::class.java), ITransformer<ClassNode> {
     override fun groupKeys(input: ClassTransformer): String = input.targetClassName
 
     override fun getKey(input: ClassNode, context: ITransformerVotingContext): String = input.name
