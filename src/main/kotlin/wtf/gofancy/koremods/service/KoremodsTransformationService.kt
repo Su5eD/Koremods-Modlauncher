@@ -43,7 +43,7 @@ class KoremodsTransformationService(private val prelaunch: KoremodsPrelaunch) : 
     override fun beginScanning(environment: IEnvironment): List<ITransformationService.Resource> {
         val discoveryURLs = getModClasses(environment)
 
-        KoremodsLaunch.launch(prelaunch, discoveryURLs, KoremodsPrelaunch.ASM_DEP_NAMES, KoremodsPlugin)
+        KoremodsLaunch.launch(prelaunch, discoveryURLs, KoremodsPlugin)
 
         return emptyList()
     }

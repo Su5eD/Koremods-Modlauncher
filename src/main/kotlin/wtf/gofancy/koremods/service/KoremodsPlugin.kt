@@ -29,8 +29,8 @@ import net.minecraftforge.fml.loading.progress.StartupMessageManager
 import net.minecraftforge.forgespi.language.IModInfo
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
-import wtf.gofancy.koremods.KoremodsDiscoverer
 import wtf.gofancy.koremods.api.KoremodsLaunchPlugin
+import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 
 object KoremodsPlugin : KoremodsLaunchPlugin {
@@ -50,7 +50,7 @@ object KoremodsPlugin : KoremodsLaunchPlugin {
         
         LOGGER.info("Verifying script packs")
 
-        KoremodsDiscoverer.INSTANCE?.scriptPacks?.forEach { pack ->
+        KoremodsLaunch.DISCOVERY.scriptPacks.forEach { pack ->
             mods.forEach { (modid, source) ->
                 if (pack.namespace == modid && pack.path != source) {
                     throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
