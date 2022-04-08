@@ -24,6 +24,7 @@
 
 package wtf.gofancy.koremods.service
 
+import net.minecraftforge.fml.loading.FMLEnvironment
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.fml.loading.progress.StartupMessageManager
 import net.minecraftforge.forgespi.language.IModInfo
@@ -36,7 +37,7 @@ import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 object KoremodsPlugin : KoremodsLaunchPlugin {
     private val LOGGER = LogManager.getLogger()
     
-    override fun shouldEnableSplashScreen(): Boolean = FMLLoader.getDist().isClient
+    override fun shouldEnableSplashScreen(): Boolean = FMLEnvironment.dist.isClient
 
     override fun appendLogMessage(level: Level, message: String) {
         StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")
