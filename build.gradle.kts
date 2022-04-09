@@ -3,7 +3,6 @@ import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.*
 
 buildscript {
@@ -108,12 +107,12 @@ dependencies {
     shadeKotlin(kotlin("reflect"))
     shadeKotlin(kotlin("scripting-common"))
     shadeKotlin(kotlin("scripting-jvm"))
-    shadeKotlin(kotlin("scripting-jvm-host")).cast<ExternalModuleDependency>().run {
+    (shadeKotlin(kotlin("scripting-jvm-host")) as ExternalModuleDependency).run {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-scripting-compiler-embeddable")
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.5")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.7")
 }
 
 license {

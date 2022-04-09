@@ -51,7 +51,7 @@ object KoremodsPlugin : KoremodsLaunchPlugin {
         
         LOGGER.info("Verifying script packs")
 
-        KoremodsLaunch.DISCOVERY.scriptPacks.forEach { pack ->
+        KoremodsLaunch.LOADER.scriptPacks.forEach { pack ->
             mods.forEach { (modid, source) ->
                 if (pack.namespace == modid && pack.path != source) {
                     throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
