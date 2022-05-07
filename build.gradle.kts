@@ -1,7 +1,10 @@
+@file:Suppress("UnstableApiUsage")
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
@@ -22,14 +25,13 @@ plugins {
 group = "wtf.gofancy.koremods"
 version = getGitVersion()
 
-val kotlinVersion: String by project
-
-val script: Configuration by configurations.creating {
-    attributes { 
-        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
-    }
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    withSourcesJar()
 }
-val shadeKotlin: Configuration by configurations.creating
+
+val SCRIPT_COMPILER_CLASSPATH_USAGE = "script-compiler-classpath"
+val kotlinVersion: String by project
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -41,32 +43,42 @@ val manifestAttributes = mapOf(
     "FMLModType" to "LIBRARY"
 )
 
+val script: Configuration by configurations.creating {
+    attributes {
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
+    }
+}
+val shadeKotlin: Configuration by configurations.creating
+val embeddedRuntimeElements: Configuration by configurations.creating {
+    attributes { 
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EMBEDDED))
+        attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment.STANDARD_JVM))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, java.toolchain.languageVersion.get().asInt())
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(KotlinPlatformType.attribute, KotlinPlatformType.jvm)
+    }
+    
+    afterEvaluate {
+        outgoing.artifact(fullJar)
+    }
+}
+
 configurations {
-    compileOnly {
+    implementation {
         extendsFrom(script)
     }
 
     runtimeElements {
-        setExtendsFrom(emptySet())
-    }
-    
-    apiElements {
         setExtendsFrom(setOf(script))
         
-        afterEvaluate {
-            outgoing.artifacts.clear()
-            outgoing.artifact(slimJar)
-        }
+        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(SCRIPT_COMPILER_CLASSPATH_USAGE))
     }
 
-    runtimeClasspath {
-        exclude(group = "org.jetbrains.kotlin")
+    apiElements {
+        setExtendsFrom(setOf(script))
     }
-}
-
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
-    withSourcesJar()
 }
 
 minecraft {
@@ -84,7 +96,7 @@ minecraft {
             forceExit = false
 
             lazyToken("minecraft_classpath") {
-                tasks.jar.get().archiveFile.get().asFile.absolutePath
+                fullJar.archiveFile.get().asFile.absolutePath
             }
         }
 
@@ -112,7 +124,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.7")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.14")
 }
 
 license {
@@ -137,33 +149,31 @@ val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     archiveVersion.set(kotlinVersion)
 }
 
-val slimJar by tasks.creating(Jar::class) {
-    dependsOn("classes")
+val fullJar by tasks.creating(Jar::class) {
+    dependsOn(tasks.jar, kotlinDepsJar)
+    val kotlinDeps = kotlinDepsJar.archiveFile
 
-    from(sourceSets.main.get().output)
-    manifest.attributes(manifestAttributes)
+    from(zipTree(tasks.jar.get().archiveFile))
+    doFirst { from(zipTree(script.singleFile)) }
+    from(kotlinDeps)
 
-    archiveClassifier.set("slim")
+    manifest {
+        attributes(manifestAttributes)
+        attributes(
+            "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name
+        )
+    }
 }
 
 tasks {
     jar {
-        dependsOn(kotlinDepsJar)
-        val kotlinDeps = kotlinDepsJar.archiveFile
+        manifest.attributes(manifestAttributes)
         
-        doFirst { from(zipTree(script.singleFile)) }
-        from(kotlinDeps)
-
-        manifest {
-            attributes(manifestAttributes)
-            attributes(
-                "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name
-            )
-        }
+        archiveClassifier.set("slim")
     }
 
     whenTaskAdded {
-        if (name == "prepareRuns") dependsOn(jar)
+        if (name == "prepareRuns") dependsOn(fullJar)
     }
 
     withType<KotlinCompile> {
@@ -173,6 +183,13 @@ tasks {
     withType<Wrapper> {
         gradleVersion = "7.4.2"
         distributionType = Wrapper.DistributionType.BIN
+    }
+}
+
+afterEvaluate {
+    val javaComponent = components["java"] as AdhocComponentWithVariants
+    javaComponent.addVariantsFromConfiguration(embeddedRuntimeElements) {
+        mapToMavenScope("runtime")
     }
 }
 
