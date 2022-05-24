@@ -82,7 +82,7 @@ configurations {
 }
 
 minecraft {
-    mappings("official", "1.18.1")
+    mappings("official", "1.18.2")
 
     runs {
         val config = Action<RunConfig> {
@@ -107,12 +107,15 @@ minecraft {
 
 repositories {
     mavenCentral()
-    maven("https://su5ed.jfrog.io/artifactory/maven")
+    maven {
+        name = "Garden of Fancy"
+        url = uri("https://maven.gofancy.wtf/releases")
+    }
     mavenLocal()
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.2-40.0.36")
+    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.2-40.1.21")
 
     shadeKotlin(kotlin("stdlib"))
     shadeKotlin(kotlin("stdlib-jdk8"))
@@ -124,7 +127,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.18")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.22")
 }
 
 license {
@@ -184,6 +187,10 @@ tasks {
         gradleVersion = "7.4.2"
         distributionType = Wrapper.DistributionType.BIN
     }
+    
+    assemble {
+        dependsOn(fullJar)
+    }
 }
 
 afterEvaluate {
@@ -195,43 +202,23 @@ afterEvaluate {
 
 publishing {
     publications {
-        create<MavenPublication>(project.name) {
+        register<MavenPublication>(project.name) {
             from(components["java"])
-
-            suppressAllPomMetadataWarnings()
         }
     }
-
+    
     repositories {
-        val ciJobToken = System.getenv("CI_JOB_TOKEN")
-        val deployToken = project.findProperty("DEPLOY_TOKEN") as String?
-        if (ciJobToken != null || deployToken != null) {
+        val mavenUser = System.getenv("GOFANCY_MAVEN_USER")
+        val mavenToken = System.getenv("GOFANCY_MAVEN_TOKEN")
+        
+        if (mavenUser != null && mavenToken != null) {
             maven {
-                name = "GitLab"
-                url = uri("https://gitlab.com/api/v4/projects/32090725/packages/maven")
+                name = "gofancy"
+                url = uri("https://maven.gofancy.wtf/releases")
 
-                credentials(HttpHeaderCredentials::class) {
-                    if (ciJobToken != null) {
-                        name = "Job-Token"
-                        value = ciJobToken
-                    } else {
-                        name = "Deploy-Token"
-                        value = deployToken
-                    }
-                }
-                authentication {
-                    create("header", HttpHeaderAuthentication::class)
-                }
-            }
-        }
-
-        if (project.hasProperty("artifactoryPassword")) {
-            maven {
-                name = "artifactory"
-                url = uri("https://su5ed.jfrog.io/artifactory/maven")
                 credentials {
-                    username = project.properties["artifactoryUser"] as String
-                    password = project.properties["artifactoryPassword"] as String
+                    username = mavenUser
+                    password = mavenToken
                 }
             }
         }

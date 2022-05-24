@@ -2,7 +2,6 @@ pluginManagement {
     repositories { 
         gradlePluginPortal()
         maven("https://maven.minecraftforge.net")
-        maven("https://gitlab.com/api/v4/projects/26758973/packages/maven")
     }
     
     plugins {
