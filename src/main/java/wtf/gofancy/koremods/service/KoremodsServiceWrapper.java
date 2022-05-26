@@ -24,23 +24,28 @@
 
 package wtf.gofancy.koremods.service;
 
+import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
 import cpw.mods.modlauncher.api.IModuleLayerManager;
 import cpw.mods.modlauncher.api.ITransformationService;
 import cpw.mods.modlauncher.api.ITransformer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import wtf.gofancy.koremods.prelaunch.KoremodsPrelaunch;
 
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
 
 public class KoremodsServiceWrapper implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
+    private static final String KOTLIN_DEP_ATTRIBUTE_NAME = "Additional-Dependencies-Kotlin";
 
     private ITransformationService actualTransformationService;
 
@@ -53,18 +58,16 @@ public class KoremodsServiceWrapper implements ITransformationService {
     public void initialize(IEnvironment environment) {
         LOGGER.info("Setting up Koremods environment");
 
-        Path gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
-            .orElseThrow(() -> new IllegalStateException("Could not find game directory"));
-
         try {
-            URL jarLocation = getCurrentLocation();
-            KoremodsPrelaunch prelaunch = new KoremodsPrelaunch(gameDir, jarLocation);
+            URI jarLocation = getCurrentLocation();
+            Path path = Path.of(jarLocation);
+            SecureJar kotlinDep = getKotlinSecureJar(path);
+            URL mainJarUrl = jarLocation.toURL();
 
-            URL kotlinDep = prelaunch.extractDependency("Kotlin");
             ClassLoader parentCL = getClass().getClassLoader();
-            ClassLoader classLoader = new MLDependencyClassLoader(new URL[] { prelaunch.mainJarUrl, kotlinDep }, parentCL, KoremodsPrelaunch.KOTLIN_DEP_PACKAGES);
+            ClassLoader classLoader = new DependencyClassLoader(new URL[]{mainJarUrl}, parentCL, kotlinDep);
 
-            Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor(KoremodsPrelaunch.class).newInstance(prelaunch);
+            Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -82,7 +85,8 @@ public class KoremodsServiceWrapper implements ITransformationService {
     }
 
     @Override
-    public void onLoad(IEnvironment env, Set<String> otherServices) {}
+    public void onLoad(IEnvironment env, Set<String> otherServices) {
+    }
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -90,9 +94,20 @@ public class KoremodsServiceWrapper implements ITransformationService {
         return this.actualTransformationService.transformers();
     }
 
-    public URL getCurrentLocation() throws URISyntaxException, MalformedURLException {
+    private SecureJar getKotlinSecureJar(Path rootPath) {
+        SecureJar jar = SecureJar.from(rootPath);
+        Attributes attributes = jar.getManifest().getMainAttributes();
+
+        String depName = attributes.getValue(KOTLIN_DEP_ATTRIBUTE_NAME);
+        if (depName == null) throw new IllegalArgumentException("Required Kotlin dependency not found");
+
+        Path depPath = jar.getPath(depName);
+        return SecureJar.from(depPath);
+    }
+
+    private URI getCurrentLocation() throws URISyntaxException {
         URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
         // Thanks, SJH
-        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null).toURL();
+        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null);
     }
 }
