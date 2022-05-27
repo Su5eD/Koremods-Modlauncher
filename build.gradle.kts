@@ -66,6 +66,12 @@ val embeddedRuntimeElements: Configuration by configurations.creating {
 }
 
 configurations {
+    all {
+        if (System.getenv("REFRESH_DYNAMIC_VERSIONS").toBoolean()) {
+            resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.MILLISECONDS)
+        }
+    }
+    
     implementation {
         extendsFrom(script)
     }
@@ -111,7 +117,10 @@ repositories {
         name = "Garden of Fancy"
         url = uri("https://maven.gofancy.wtf/releases")
     }
-    mavenLocal()
+    maven {
+        name = "Garden of Fancy"
+        url = uri("https://maven.gofancy.wtf/snapshots")
+    }
 }
 
 dependencies {
@@ -127,7 +136,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.26")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.3.+")
 }
 
 license {
