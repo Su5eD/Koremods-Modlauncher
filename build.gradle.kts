@@ -6,10 +6,16 @@ import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.matthewprenger.cursegradle.CurseProject
+import com.matthewprenger.cursegradle.CurseArtifact
+import net.minecraftforge.gradleutils.ChangelogUtils
+import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
+import org.eclipse.jgit.api.Git
 import java.util.*
 
 buildscript {
     dependencies {
+        classpath(group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.1.+")
         classpath(group = "fr.brouillard.oss", name = "jgitver", version = "0.14.0")
     }
 }
@@ -18,8 +24,10 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     id("net.minecraftforge.gradle") version "5.1.+"
+    id("net.minecraftforge.gradleutils") version "2.+" apply false
     id("com.github.johnrengelman.shadow") version "7.1.0" apply false
     id("org.cadixdev.licenser") version "0.6.1"
+    id("com.matthewprenger.cursegradle") version "1.4.+"
 }
 
 group = "wtf.gofancy.koremods"
@@ -30,8 +38,13 @@ java {
     withSourcesJar()
 }
 
+ChangelogUtils.setupChangelogGenerationFromTag(project, getLatestTag())
+
 val SCRIPT_COMPILER_CLASSPATH_USAGE = "script-compiler-classpath"
 val kotlinVersion: String by project
+val minecraftVersion: String by project
+val forgeVersion: String by project
+val curseForgeProjectID: String by project
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -88,7 +101,7 @@ configurations {
 }
 
 minecraft {
-    mappings("official", "1.18.2")
+    mappings("official", minecraftVersion)
 
     runs {
         val config = Action<RunConfig> {
@@ -124,7 +137,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "1.18.2-40.1.21")
+    minecraft(group = "net.minecraftforge", name = "forge", version = "$minecraftVersion-$forgeVersion")
 
     shadeKotlin(kotlin("stdlib"))
     shadeKotlin(kotlin("stdlib-jdk8"))
@@ -183,6 +196,10 @@ tasks {
         
         archiveClassifier.set("slim")
     }
+    
+    "curseforge" {
+        dependsOn("createChangelog")
+    }
 
     whenTaskAdded {
         if (name == "prepareRuns") dependsOn(fullJar)
@@ -232,6 +249,30 @@ publishing {
             }
         }
     }
+}
+
+curseforge {
+    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "UNKNOWN"
+    project(closureOf<CurseProject> {
+        id = curseForgeProjectID
+        changelogType = "markdown"
+        changelog = project.tasks.getByName<GenerateChangelogTask>("createChangelog").outputFile.get().asFile
+        releaseType = System.getenv("CURSEFORGE_RELEASE_TYPE") ?: "release"
+        mainArtifact(tasks.getByName("jar"), closureOf<CurseArtifact> {
+            displayName = "Koremods ${project.version}"
+        })
+        addGameVersion("Forge")
+        addGameVersion(minecraftVersion)
+    })
+}
+
+fun getLatestTag(): String {
+    try {
+        val git = Git.open(project.rootDir)
+        val desc = git.describe().setLong(true).setTags(true).call()
+        return desc?.split("-", limit = 2)?.get(0) ?: "0.0"
+    } catch (ignored: Exception) {}
+    return "0.0"
 }
 
 fun getGitVersion(): String {
