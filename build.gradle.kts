@@ -1,16 +1,16 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.matthewprenger.cursegradle.CurseArtifact
+import com.matthewprenger.cursegradle.CurseProject
 import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import com.matthewprenger.cursegradle.CurseProject
-import com.matthewprenger.cursegradle.CurseArtifact
 import net.minecraftforge.gradleutils.ChangelogUtils
 import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
 import org.eclipse.jgit.api.Git
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
 buildscript {
@@ -28,6 +28,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.0" apply false
     id("org.cadixdev.licenser") version "0.6.1"
     id("com.matthewprenger.cursegradle") version "1.4.+"
+    id("com.modrinth.minotaur") version "2.+"
 }
 
 group = "wtf.gofancy.koremods"
@@ -45,6 +46,8 @@ val kotlinVersion: String by project
 val minecraftVersion: String by project
 val forgeVersion: String by project
 val curseForgeProjectID: String by project
+val modrinthProjectID: String by project
+val publishReleaseType = System.getenv("PUBLISH_RELEASE_TYPE") ?: "release"
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -257,13 +260,23 @@ curseforge {
         id = curseForgeProjectID
         changelogType = "markdown"
         changelog = project.tasks.getByName<GenerateChangelogTask>("createChangelog").outputFile.get().asFile
-        releaseType = System.getenv("CURSEFORGE_RELEASE_TYPE") ?: "release"
+        releaseType = publishReleaseType
         mainArtifact(tasks.getByName("jar"), closureOf<CurseArtifact> {
             displayName = "Koremods ${project.version}"
         })
         addGameVersion("Forge")
         addGameVersion(minecraftVersion)
     })
+}
+
+modrinth {
+    token.set(System.getenv("MODRINTH_TOKEN"))
+    projectId.set(modrinthProjectID)
+    versionName.set("Koremods ${project.version}")
+    versionType.set(publishReleaseType)
+    uploadFile.set(tasks.jar.get())
+    gameVersions.addAll(minecraftVersion)
+    changelog.set(project.tasks.getByName<GenerateChangelogTask>("createChangelog").outputFile.asFile.map(File::readText))
 }
 
 fun getLatestTag(): String {
