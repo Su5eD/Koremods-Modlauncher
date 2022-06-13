@@ -261,7 +261,7 @@ curseforge {
         changelogType = "markdown"
         changelog = project.tasks.getByName<GenerateChangelogTask>("createChangelog").outputFile.get().asFile
         releaseType = publishReleaseType
-        mainArtifact(tasks.getByName("jar"), closureOf<CurseArtifact> {
+        mainArtifact(fullJar, closureOf<CurseArtifact> {
             displayName = "Koremods ${project.version}"
         })
         addGameVersion("Forge")
@@ -274,7 +274,7 @@ modrinth {
     projectId.set(modrinthProjectID)
     versionName.set("Koremods ${project.version}")
     versionType.set(publishReleaseType)
-    uploadFile.set(tasks.jar.get())
+    uploadFile.set(fullJar)
     gameVersions.addAll(minecraftVersion)
     changelog.set(project.tasks.getByName<GenerateChangelogTask>("createChangelog").outputFile.asFile.map(File::readText))
 }
