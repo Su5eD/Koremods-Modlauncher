@@ -32,15 +32,14 @@ import cpw.mods.modlauncher.api.ITransformer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.IOException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 public class KoremodsServiceWrapper implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -59,13 +58,12 @@ public class KoremodsServiceWrapper implements ITransformationService {
         LOGGER.info("Setting up Koremods environment");
 
         try {
-            URI jarLocation = getCurrentLocation();
-            Path path = Path.of(jarLocation);
+            URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
+            Path path = Path.of(jarLocation.toURI());
             SecureJar kotlinDep = getKotlinSecureJar(path);
-            URL mainJarUrl = jarLocation.toURL();
 
             ClassLoader parentCL = getClass().getClassLoader();
-            ClassLoader classLoader = new DependencyClassLoader(new URL[]{mainJarUrl}, parentCL, kotlinDep);
+            ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, kotlinDep);
 
             Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
@@ -94,20 +92,16 @@ public class KoremodsServiceWrapper implements ITransformationService {
         return this.actualTransformationService.transformers();
     }
 
-    private SecureJar getKotlinSecureJar(Path rootPath) {
-        SecureJar jar = SecureJar.from(rootPath);
-        Attributes attributes = jar.getManifest().getMainAttributes();
+    private SecureJar getKotlinSecureJar(Path rootPath) throws IOException {
+        Manifest manifest = new Manifest();
+        Path manifestPath = rootPath.resolve("META-INF/MANIFEST.MF");
+        manifest.read(Files.newInputStream(manifestPath));
+        Attributes attributes = manifest.getMainAttributes();
 
         String depName = attributes.getValue(KOTLIN_DEP_ATTRIBUTE_NAME);
         if (depName == null) throw new IllegalArgumentException("Required Kotlin dependency not found");
 
-        Path depPath = jar.getPath(depName);
+        Path depPath = rootPath.resolve(depName);
         return SecureJar.from(depPath);
-    }
-
-    private URI getCurrentLocation() throws URISyntaxException {
-        URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
-        // Thanks, SJH
-        return new URI("file", null, URLDecoder.decode(jarLocation.getPath(), StandardCharsets.UTF_8).split("#")[0], null);
     }
 }

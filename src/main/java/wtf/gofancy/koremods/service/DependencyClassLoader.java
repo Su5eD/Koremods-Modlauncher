@@ -26,9 +26,9 @@ package wtf.gofancy.koremods.service;
 
 import cpw.mods.cl.ProtectionDomainHelper;
 import cpw.mods.jarhandling.SecureJar;
+import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -40,7 +40,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
-
 
 public class DependencyClassLoader extends URLClassLoader {
     static {
@@ -98,9 +97,7 @@ public class DependencyClassLoader extends URLClassLoader {
                 CodeSigner[] codeSigners = this.depJar.getManifestSigners();
                 CodeSource cs = ProtectionDomainHelper.createCodeSource(this.depJar.getPrimaryPath().toUri().toURL(), codeSigners);
                 return defineClass(name, bytes, 0, bytes.length, ProtectionDomainHelper.createProtectionDomain(cs, this));
-            } catch (Exception ignored) {
-
-            }
+            } catch (Exception ignored) {}
         }
 
         return super.findClass(name);
@@ -109,7 +106,7 @@ public class DependencyClassLoader extends URLClassLoader {
     @Override
     public URL findResource(String name) {
         return this.depJar.findFile(name)
-            .map(DependencyClassLoader::toURL)
+            .map(LamdbaExceptionUtils.rethrowFunction(URI::toURL))
             .orElseGet(() -> super.findResource(name));
     }
 
@@ -118,20 +115,12 @@ public class DependencyClassLoader extends URLClassLoader {
         Enumeration<URL> ret = super.findResources(name);
 
         return this.depJar.findFile(name)
-            .map(DependencyClassLoader::toURL)
+            .map(LamdbaExceptionUtils.rethrowFunction(URI::toURL))
             .map(url -> {
                 List<URL> urls = Collections.list(ret);
                 urls.add(url);
                 return Collections.enumeration(urls);
             })
             .orElse(ret);
-    }
-
-    private static URL toURL(final URI uri) {
-        try {
-            return uri.toURL();
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(e);
-        }
     }
 }
