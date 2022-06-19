@@ -33,6 +33,9 @@ import org.apache.logging.log4j.LogManager
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.launch.KoremodsLaunchPlugin
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
+import java.net.URI
+import java.nio.file.FileSystems
+import java.nio.file.Path
 
 object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     private val LOGGER = LogManager.getLogger()
@@ -44,6 +47,13 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
         StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")
     }
 
+    override fun createCompiledScriptClassLoader(path: Path, parent: ClassLoader?): ClassLoader {
+        val uriPath = path.toUri().path.let { if (it.startsWith("/")) it.substring(1) else it }
+        val jijUri = URI("jij:$uriPath")
+        val pathFS = FileSystems.newFileSystem(jijUri, emptyMap<String, Any>())
+        return CompiledScriptClassLoader(pathFS.getPath("/"), parent)
+    }
+
     internal fun verifyScriptPacks() {
         val modList = FMLLoader.getLoadingModList()
         val mods = modList.mods
@@ -52,7 +62,7 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
         
         LOGGER.info("Verifying script packs")
 
-        KoremodsLaunch.LOADER.scriptPacks.forEach { pack ->
+        KoremodsLaunch.LOADER!!.scriptPacks.forEach { pack ->
             mods.forEach { (modid, source) ->
                 if (pack.namespace == modid && pack.path != source) {
                     throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
