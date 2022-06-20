@@ -250,6 +250,16 @@ publishing {
                     password = mavenToken
                 }
             }
+            
+            maven {
+                name = "gofancySnapshots"
+                url = uri("https://maven.gofancy.wtf/snapshots")
+                
+                credentials {
+                    username = mavenUser
+                    password = mavenToken
+                }
+            }
         }
     }
 }
