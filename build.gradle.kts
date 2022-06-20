@@ -29,7 +29,6 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     id("net.minecraftforge.gradle") version "5.1.+"
-    id("net.minecraftforge.gradleutils") version "2.+" apply false
     id("com.github.johnrengelman.shadow") version "7.1.0" apply false
     id("org.cadixdev.licenser") version "0.6.1"
     id("com.matthewprenger.cursegradle") version "1.4.+"
@@ -137,10 +136,6 @@ repositories {
         name = "Garden of Fancy"
         url = uri("https://maven.gofancy.wtf/releases")
     }
-    maven {
-        name = "Garden of Fancy"
-        url = uri("https://maven.gofancy.wtf/snapshots")
-    }
 }
 
 dependencies {
@@ -156,7 +151,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.+")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.6")
 }
 
 license {
@@ -245,16 +240,6 @@ publishing {
                 name = "gofancy"
                 url = uri("https://maven.gofancy.wtf/releases")
 
-                credentials {
-                    username = mavenUser
-                    password = mavenToken
-                }
-            }
-            
-            maven {
-                name = "gofancySnapshots"
-                url = uri("https://maven.gofancy.wtf/snapshots")
-                
                 credentials {
                     username = mavenUser
                     password = mavenToken
