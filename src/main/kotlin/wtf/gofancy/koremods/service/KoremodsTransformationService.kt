@@ -34,7 +34,7 @@ import wtf.gofancy.koremods.EvalLoad
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import java.nio.file.Path
 
-class KoremodsTransformationService() : ITransformationService {
+class KoremodsTransformationService : ITransformationService {
 
     override fun name(): String = throw UnsupportedOperationException()
 

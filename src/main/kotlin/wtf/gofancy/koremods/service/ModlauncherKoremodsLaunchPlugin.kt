@@ -24,21 +24,23 @@
 
 package wtf.gofancy.koremods.service
 
+import cpw.mods.jarhandling.SecureJar
 import net.minecraftforge.fml.loading.FMLEnvironment
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.fml.loading.progress.StartupMessageManager
 import net.minecraftforge.forgespi.language.IModInfo
+import org.apache.commons.lang3.SystemUtils
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.launch.KoremodsLaunchPlugin
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
-import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Path
 
 object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     private val LOGGER = LogManager.getLogger()
+    private val DEFAULT_FS = FileSystems.getDefault()
 
     override val splashScreenAvailable: Boolean
         get() = FMLEnvironment.dist.isClient
@@ -48,10 +50,8 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     }
 
     override fun createCompiledScriptClassLoader(path: Path, parent: ClassLoader?): ClassLoader {
-        val uriPath = path.toUri().path.let { if (it.startsWith("/")) it.substring(1) else it }
-        val jijUri = URI("jij:$uriPath")
-        val pathFS = FileSystems.newFileSystem(jijUri, emptyMap<String, Any>())
-        return CompiledScriptClassLoader(pathFS.getPath("/"), parent)
+        val scriptPath = getPathToScript(path)
+        return CompiledScriptClassLoader(scriptPath, parent)
     }
 
     internal fun verifyScriptPacks() {
@@ -71,5 +71,22 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
                 }
             }
         }
+    }
+    
+    private fun getPathToScript(base: Path): Path {
+        if (base.fileSystem == DEFAULT_FS) {
+            return SecureJar.from(base).rootPath
+        }
+        else if (base.fileSystem.provider().scheme == "jar") {
+            val uri = base.toUri().schemeSpecificPart.removePrefix("file://").let { str -> 
+                if (SystemUtils.IS_OS_WINDOWS) str.removePrefix("/")
+                else str
+            }
+            val parts = uri.split("!/")
+            val jar = SecureJar.from(Path.of(parts[0]))
+            val scriptJar = SecureJar.from(jar.getPath(parts[1]))
+            return scriptJar.rootPath
+        }
+        throw RuntimeException("Unknown base path file system")
     }
 }
