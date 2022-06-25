@@ -32,7 +32,6 @@ import cpw.mods.modlauncher.api.ITransformer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,8 +43,13 @@ import java.util.jar.Manifest;
 public class KoremodsServiceWrapper implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
-    private static final String KOTLIN_DEP_ATTRIBUTE_NAME = "Additional-Dependencies-Kotlin";
+    
+    private static final String JIJ_ATTRIBUTE_PREFIX = "Additional-Dependencies-";
+    private static final String KOTLIN_JIJ_NAME = "Kotlin";
+    private static final String MOD_JIJ_NAME = "Mod";
 
+    static Path modJijPath;
+    
     private ITransformationService actualTransformationService;
 
     @Override
@@ -60,10 +64,15 @@ public class KoremodsServiceWrapper implements ITransformationService {
         try {
             URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
             Path path = Path.of(jarLocation.toURI());
-            SecureJar kotlinDep = getKotlinSecureJar(path);
+            Manifest manifest = new Manifest();
+            Path manifestPath = path.resolve("META-INF/MANIFEST.MF");
+            manifest.read(Files.newInputStream(manifestPath));
+            Attributes attributes = manifest.getMainAttributes();
+            SecureJar kotlinJij = SecureJar.from(getJarInJar(path, attributes, KOTLIN_JIJ_NAME));
+            modJijPath = getJarInJar(path, attributes, MOD_JIJ_NAME);
 
             ClassLoader parentCL = getClass().getClassLoader();
-            ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, kotlinDep);
+            ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, kotlinJij);
 
             Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
@@ -91,17 +100,11 @@ public class KoremodsServiceWrapper implements ITransformationService {
     public List<ITransformer> transformers() {
         return this.actualTransformationService.transformers();
     }
-
-    private SecureJar getKotlinSecureJar(Path rootPath) throws IOException {
-        Manifest manifest = new Manifest();
-        Path manifestPath = rootPath.resolve("META-INF/MANIFEST.MF");
-        manifest.read(Files.newInputStream(manifestPath));
-        Attributes attributes = manifest.getMainAttributes();
-
-        String depName = attributes.getValue(KOTLIN_DEP_ATTRIBUTE_NAME);
-        if (depName == null) throw new IllegalArgumentException("Required Kotlin dependency not found");
-
-        Path depPath = rootPath.resolve(depName);
-        return SecureJar.from(depPath);
+    
+    private Path getJarInJar(Path path, Attributes attributes, String name) {
+        String depName = attributes.getValue(JIJ_ATTRIBUTE_PREFIX + name);
+        if (depName == null) throw new IllegalArgumentException("Required " + name + " embedded jar not found");
+        
+        return path.resolve(depName);
     }
 }

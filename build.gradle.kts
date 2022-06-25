@@ -58,10 +58,10 @@ val manifestAttributes = mapOf(
     "Specification-Version" to 1,
     "Implementation-Title" to project.name,
     "Implementation-Version" to project.version,
-    "Implementation-Vendor" to "Garden of Fancy",
-    "FMLModType" to "LIBRARY"
+    "Implementation-Vendor" to "Garden of Fancy"
 )
 
+val mod: SourceSet by sourceSets.creating
 val script: Configuration by configurations.creating {
     attributes {
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
@@ -93,6 +93,10 @@ configurations {
 
     implementation {
         extendsFrom(script)
+    }
+    
+    "modImplementation" {
+        extendsFrom(minecraft.get())
     }
 
     runtimeElements {
@@ -176,25 +180,41 @@ val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     archiveVersion.set(kotlinVersion)
 }
 
+val modJar by tasks.creating(Jar::class) {
+    dependsOn("modClasses")
+    
+    from(mod.output)
+    manifest.attributes(manifestAttributes)
+    
+    archiveClassifier.set("mod")
+}
+
 val fullJar by tasks.creating(Jar::class) {
-    dependsOn(tasks.jar, kotlinDepsJar)
+    dependsOn(tasks.jar, kotlinDepsJar, modJar)
     val kotlinDeps = kotlinDepsJar.archiveFile
+    val modJarFile = modJar.archiveFile
 
     from(zipTree(tasks.jar.get().archiveFile))
     doFirst { from(zipTree(script.singleFile)) }
     from(kotlinDeps)
+    from(modJarFile)
 
     manifest {
         attributes(manifestAttributes)
         attributes(
-            "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name
+            "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name,
+            "Additional-Dependencies-Mod" to modJarFile.get().asFile.name
         )
     }
 }
 
 tasks {
     jar {
-        manifest.attributes(manifestAttributes)
+        manifest {
+            attributes(manifestAttributes)
+            
+            attributes("FMLModType" to "LIBRARY")
+        }
 
         archiveClassifier.set("slim")
     }

@@ -1,0 +1,25 @@
+modLoader="javafml"
+loaderVersion="[40,)"
+license="MIT"
+issueTrackerURL="https://gitlab.com/gofancy/koremods/koremods-modlauncher/-/issues"
+[[mods]]
+modId="koremods"
+version="${file.jarVersion}"
+displayName="Koremods"
+displayURL="https://gitlab.com/gofancy/koremods"
+logoFile="logo.png"
+authors="Su5eD"
+description="A Kotlin Script bytecode manipulation framework."
+
+[[dependencies.koremods]]
+    modId="forge"
+    mandatory=true
+    versionRange="[40,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.koremods]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.18, 1.19)"
+    ordering="NONE"
+    side="BOTH"
