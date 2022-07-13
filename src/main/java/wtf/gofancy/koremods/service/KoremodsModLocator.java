@@ -25,10 +25,10 @@
 package wtf.gofancy.koremods.service;
 
 import net.minecraftforge.fml.loading.moddiscovery.AbstractJarFileLocator;
+import net.minecraftforge.forgespi.locating.IModFile;
 
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class KoremodsModLocator extends AbstractJarFileLocator {
     @Override
@@ -39,8 +39,11 @@ public class KoremodsModLocator extends AbstractJarFileLocator {
     @Override
     public void initArguments(Map<String, ?> arguments) {}
 
+    // Implemented full scanMods method to preserve compatibility with forge 40.1.59 and lower
     @Override
-    public Stream<Path> scanCandidates() {
-        return Stream.of(KoremodsServiceWrapper.modJijPath);
+    public List<IModFile> scanMods() {
+        return createMod(KoremodsServiceWrapper.modJijPath)
+            .map(List::of)
+            .orElseGet(List::of);
     }
 }
