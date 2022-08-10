@@ -78,7 +78,8 @@ public class DependencyClassLoader extends URLClassLoader {
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         String path = name.replace('.', '/') + ".class";
-        byte[] bytes = this.depJar.findFile(path)
+        SecureJar.ModuleDataProvider provider = this.depJar.moduleDataProvider();
+        byte[] bytes = provider.findFile(path)
             .map(Path::of)
             .flatMap(p -> {
                 try {
@@ -92,7 +93,7 @@ public class DependencyClassLoader extends URLClassLoader {
         if (bytes != null) {
             try {
                 String pname = name.substring(0, name.lastIndexOf('.'));
-                if (getDefinedPackage(pname) == null) definePackage(pname, this.depJar.getManifest(), null);
+                if (getDefinedPackage(pname) == null) definePackage(pname, provider.getManifest(), null);
 
                 CodeSigner[] codeSigners = this.depJar.getManifestSigners();
                 CodeSource cs = ProtectionDomainHelper.createCodeSource(this.depJar.getPrimaryPath().toUri().toURL(), codeSigners);
@@ -105,7 +106,7 @@ public class DependencyClassLoader extends URLClassLoader {
 
     @Override
     public URL findResource(String name) {
-        return this.depJar.findFile(name)
+        return this.depJar.moduleDataProvider().findFile(name)
             .map(LamdbaExceptionUtils.rethrowFunction(URI::toURL))
             .orElseGet(() -> super.findResource(name));
     }
@@ -114,7 +115,7 @@ public class DependencyClassLoader extends URLClassLoader {
     public Enumeration<URL> findResources(String name) throws IOException {
         Enumeration<URL> ret = super.findResources(name);
 
-        return this.depJar.findFile(name)
+        return this.depJar.moduleDataProvider().findFile(name)
             .map(LamdbaExceptionUtils.rethrowFunction(URI::toURL))
             .map(url -> {
                 List<URL> urls = Collections.list(ret);

@@ -32,7 +32,7 @@ import wtf.gofancy.koremods.applyTransform
 import wtf.gofancy.koremods.dsl.Transformer
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 
-abstract class KoremodsBaseTransformer<T, K : Any, V : Transformer<T>>(cls: Class<V>) : ITransformer<T> {
+abstract class KoremodsBaseTransformer<T : Any, K : Any, V : Transformer<T>>(cls: Class<V>) : ITransformer<T> {
     private val transformers: Map<K, List<V>> = KoremodsLaunch.LOADER!!.getAllTransformers()
         .filterIsInstance(cls)
         .groupBy(::groupKeys)

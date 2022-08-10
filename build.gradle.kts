@@ -155,7 +155,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.10")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.12")
 }
 
 license {
