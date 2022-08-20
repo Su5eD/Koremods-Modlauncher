@@ -16,7 +16,7 @@ import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.RevSort
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.*
+import java.util.Calendar
 
 buildscript {
     dependencies {
@@ -68,7 +68,7 @@ val script: Configuration by configurations.creating {
     }
 }
 val shadeKotlin: Configuration by configurations.creating
-val embeddedRuntimeElements: Configuration by configurations.creating {
+val embeddedRuntimeElements by configurations.creating {
     attributes {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EMBEDDED))
@@ -125,7 +125,7 @@ minecraft {
             forceExit = false
 
             lazyToken("minecraft_classpath") {
-                fullJar.archiveFile.get().asFile.absolutePath
+                fullJar.get().archiveFile.get().asFile.absolutePath
             }
         }
 
@@ -168,7 +168,7 @@ license {
     }
 }
 
-val kotlinDepsJar by tasks.creating(ShadowJar::class) {
+val kotlinDepsJar by tasks.registering(ShadowJar::class) {
     configurations = listOf(shadeKotlin)
     exclude("META-INF/versions/**")
 
@@ -180,7 +180,7 @@ val kotlinDepsJar by tasks.creating(ShadowJar::class) {
     archiveVersion.set(kotlinVersion)
 }
 
-val modJar by tasks.creating(Jar::class) {
+val modJar by tasks.registering(Jar::class) {
     dependsOn("modClasses")
     
     from(mod.output)
@@ -189,10 +189,10 @@ val modJar by tasks.creating(Jar::class) {
     archiveClassifier.set("mod")
 }
 
-val fullJar by tasks.creating(Jar::class) {
+val fullJar by tasks.registering(Jar::class) {
     dependsOn(tasks.jar, kotlinDepsJar, modJar)
-    val kotlinDeps = kotlinDepsJar.archiveFile
-    val modJarFile = modJar.archiveFile
+    val kotlinDeps = kotlinDepsJar.flatMap(Jar::getArchiveFile)
+    val modJarFile = modJar.flatMap(Jar::getArchiveFile)
 
     from(zipTree(tasks.jar.get().archiveFile))
     doFirst { from(zipTree(script.singleFile)) }
@@ -289,7 +289,7 @@ modrinth {
     projectId.set(modrinthProjectID)
     versionName.set("Koremods ${project.version}")
     versionType.set(publishReleaseType)
-    uploadFile.set(fullJar)
+    uploadFile.set(fullJar.get())
     gameVersions.addAll(minecraftVersion)
     changelog.set(changelogText)
 }
