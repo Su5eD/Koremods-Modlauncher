@@ -276,7 +276,7 @@ curseforge {
         changelogType = "markdown"
         changelog = changelogText
         releaseType = publishReleaseType
-        mainArtifact(fullJar, closureOf<CurseArtifact> {
+        mainArtifact(fullJar.get(), closureOf<CurseArtifact> {
             displayName = "Koremods ${project.version}"
         })
         addGameVersion("Forge")
@@ -296,7 +296,7 @@ modrinth {
 
 fun getGitVersion(): String {
     val jgitver = GitVersionCalculator.location(rootDir)
-        .setNonQualifierBranches("master")
+        .setNonQualifierBranches("1.19.x")
         .setStrategy(Strategies.SCRIPT)
         .setScript("print \"\${metadata.CURRENT_VERSION_MAJOR};\${metadata.CURRENT_VERSION_MINOR};\${metadata.CURRENT_VERSION_PATCH + metadata.COMMIT_DISTANCE}\"")
     return jgitver.version
