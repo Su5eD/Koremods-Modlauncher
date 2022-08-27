@@ -64,7 +64,7 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
 
         KoremodsLaunch.LOADER!!.scriptPacks.forEach { pack ->
             mods.forEach { (modid, source) ->
-                if (pack.namespace == modid && pack.path != source) {
+                if (pack.namespace == modid && pack.path.normalize().toAbsolutePath() != source) {
                     throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
                 } else if (pack.path == source && pack.namespace != modid) {
                     throw RuntimeException("Namespace '${pack.namespace}' doesn't match the modid '$modid' found at the same location")
