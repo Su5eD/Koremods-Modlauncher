@@ -6,21 +6,13 @@ import com.matthewprenger.cursegradle.CurseProject
 import fr.brouillard.oss.jgitver.GitVersionCalculator
 import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Constants
-import org.eclipse.jgit.lib.ObjectId
-import org.eclipse.jgit.lib.Ref
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.revwalk.RevCommit
-import org.eclipse.jgit.revwalk.RevWalk
-import org.eclipse.jgit.revwalk.RevSort
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import wtf.gofancy.changelog.generateChangelog
 import java.util.Calendar
 
 buildscript {
     dependencies {
-        classpath(group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.1.+")
         classpath(group = "fr.brouillard.oss", name = "jgitver", version = "0.14.0")
     }
 }
@@ -33,6 +25,7 @@ plugins {
     id("org.cadixdev.licenser") version "0.6.1"
     id("com.matthewprenger.cursegradle") version "1.4.+"
     id("com.modrinth.minotaur") version "2.+"
+    id("wtf.gofancy.git-changelog") version "1.0.+"
 }
 
 group = "wtf.gofancy.koremods"
@@ -50,7 +43,7 @@ val forgeVersion: String by project
 val curseForgeProjectID: String by project
 val modrinthProjectID: String by project
 val publishReleaseType = System.getenv("PUBLISH_RELEASE_TYPE") ?: "release"
-val changelogText = generateChangelog(1, false)
+val changelogText = generateChangelog(1, true)
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -300,80 +293,4 @@ fun getGitVersion(): String {
         .setStrategy(Strategies.SCRIPT)
         .setScript("print \"\${metadata.CURRENT_VERSION_MAJOR};\${metadata.CURRENT_VERSION_MINOR};\${metadata.CURRENT_VERSION_PATCH + metadata.COMMIT_DISTANCE}\"")
     return jgitver.version
-}
-
-data class ChangelogTag(val name: String, val objectId: ObjectId)
-
-fun generateChangelog(depth: Int = 0, includeStart: Boolean = true): String {
-    try {
-        val changelog = StringBuilder()
-        val git = Git.open(project.rootDir)
-        changelog.appendLine("${git.repository.branch} changelog") // changelog title
-
-        val head = git.repository.resolve(Constants.HEAD)
-        val walk = RevWalk(git.repository).apply {
-            sort(RevSort.REVERSE, true)
-            markStart(git.repository.parseCommit(head))
-        }
-        val tail = walk.next() // First branch commit (tail)
-        // Get all tag refs and map them to their respective commits
-        val tags: Map<RevCommit, Ref> = git.tagList().call().associateBy { tag -> git.repository.parseCommit(tag.objectId) }
-        // Find all major.minor tags and sort them by their respective commit's date, descending
-        val versionTagsSorted: List<ChangelogTag> = tags
-            .mapValues { (_, ref) -> ChangelogTag(Repository.shortenRefName(ref.name), ref.objectId) }
-            .filterValues { tag -> tag.name.split(".").size == 2 }
-            .toSortedMap(compareByDescending { commit -> commit.authorIdent.`when` })
-            .values
-            .toList()
-            .let { list -> if (includeStart) list + ChangelogTag("0.0", tail) else list } // Add first branch commit
-            .let { list -> if (depth > 0) list.take(depth) else list }
-        // Zip each version tag with the previous one and a list of git commits between them
-        val versionTagsSortedLog = versionTagsSorted
-            .mapIndexed { index, tag ->
-                val previous =
-                    if (index == 0) head
-                    else git.repository.parseCommit(versionTagsSorted[index - 1].objectId).getParent(0)
-                val tagCommit = git.repository.parseCommit(tag.objectId) 
-                val log = git.log().run {
-                    if (tagCommit.parentCount > 0) not(tagCommit.getParent(0)) // Tag commit parent
-                    add(tagCommit) // Tag commit
-                    add(previous) // Previous tag commit parent or head
-                    call().toList()
-                }
-                Pair(tag, log)
-            }
-        // Get max tag string length
-        val maxLength = versionTagsSortedLog.maxOf { (tag, log) ->
-            "${tag.name}.${log.size}".length
-        }
-        versionTagsSortedLog
-            .forEach { (tag, log) ->
-                changelog.appendLine(tag.name)
-                changelog.appendLine("======")
-                
-                log.forEachIndexed { index, commit ->
-                    val tagName =
-                        if (index == log.lastIndex) "${tag.name}.0"
-                        else tags[commit]?.let { Repository.shortenRefName(it.name) }
-                            ?: "${tag.name}.${log.lastIndex - index}"
-                    val pad = maxLength - tagName.length
-                    val extendedPad = " ".repeat(3 + tagName.length + pad)
-                    commit.fullMessage.lines()
-                        .filterNot(String::isEmpty)
-                        .forEachIndexed { idx, line ->
-                            if (idx == 0) {
-                                val firstPad = " ".repeat(pad)
-                                changelog.appendLine(" - $tagName$firstPad $line")
-                            }
-                            else changelog.appendLine("$extendedPad $line")
-                        }
-                }
-                changelog.appendLine()
-            }
-        walk.close()
-        return changelog.toString()
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-    return ""
 }
