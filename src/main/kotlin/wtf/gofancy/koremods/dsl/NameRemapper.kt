@@ -26,6 +26,7 @@ package wtf.gofancy.koremods.dsl
 
 import cpw.mods.modlauncher.Launcher
 import cpw.mods.modlauncher.api.INameMappingService.Domain
+import org.objectweb.asm.Type
 import java.util.*
 
 fun mapClassName(name: String): String {
@@ -40,10 +41,26 @@ fun mapFieldName(name: String): String {
     return map(name, Domain.FIELD)
 }
 
+fun mapMethodDesc(methodDescriptor: String): String {
+    val stringBuilder = StringBuilder("(")
+    Type.getArgumentTypes(methodDescriptor)
+        .map(::mapType)
+        .forEach(stringBuilder::append)
+    val returnType = Type.getReturnType(methodDescriptor)
+    stringBuilder.append(")").append(mapType(returnType))
+    return stringBuilder.toString()
+}
+
 private fun map(name: String, domain: Domain): String {
     return Optional.ofNullable(Launcher.INSTANCE)
         .map(Launcher::environment)
         .flatMap { env -> env.findNameMapping("srg") }
         .map { f -> f.apply(domain, name) }
         .orElse(name)
+}
+
+private fun mapType(type: Type): Type {
+    return if (type.sort == Type.OBJECT) {
+        Type.getObjectType(mapClassName(type.className).replace('.', '/'))
+    } else type
 }

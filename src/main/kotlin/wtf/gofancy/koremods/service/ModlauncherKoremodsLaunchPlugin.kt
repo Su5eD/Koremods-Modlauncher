@@ -32,6 +32,7 @@ import net.minecraftforge.forgespi.language.IModInfo
 import org.apache.commons.lang3.SystemUtils
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
+import wtf.gofancy.koremods.dsl.*
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.launch.KoremodsLaunchPlugin
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
@@ -52,6 +53,18 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     override fun createCompiledScriptClassLoader(path: Path, parent: ClassLoader?): ClassLoader {
         val scriptPath = getPathToScript(path)
         return CompiledScriptClassLoader(scriptPath, parent)
+    }
+
+    override fun mapClassTransformer(params: ClassTransformerParams): ClassTransformerParams {
+        return params.copy(name = mapClassName(params.name))
+    }
+
+    override fun mapMethodTransformer(params: MethodTransformerParams): MethodTransformerParams {
+        return params.copy(owner = mapClassName(params.owner), name = mapMethodName(params.name), desc = mapMethodDesc(params.desc))
+    }
+
+    override fun mapFieldTransformer(params: FieldTransformerParams): FieldTransformerParams {
+        return params.copy(owner = mapClassName(params.owner), name = mapFieldName(params.name))
     }
 
     internal fun verifyScriptPacks() {
