@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service;
+package wtf.gofancy.koremods.modlauncher.service;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
@@ -74,7 +74,7 @@ public class KoremodsServiceWrapper implements ITransformationService {
             ClassLoader parentCL = getClass().getClassLoader();
             ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, kotlinJij);
 
-            Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.service.KoremodsTransformationService").getConstructor().newInstance();
+            Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.modlauncher.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
         } catch (Exception e) {
             throw new RuntimeException(e);

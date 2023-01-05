@@ -22,24 +22,28 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service
+package wtf.gofancy.koremods.modlauncher.service
 
-import cpw.mods.modlauncher.api.ITransformer
-import cpw.mods.modlauncher.api.ITransformer.Target
-import cpw.mods.modlauncher.api.ITransformerVotingContext
-import org.objectweb.asm.tree.MethodNode
-import wtf.gofancy.koremods.dsl.MethodTransformer
+import java.io.InputStream
+import java.nio.file.Path
+import java.security.ProtectionDomain
+import kotlin.io.path.inputStream
 
-object KoremodsMethodTransformer : KoremodsBaseTransformer<MethodNode, KoremodsMethodTransformer.MethodKey, MethodTransformer>(MethodTransformer::class.java), ITransformer<MethodNode> {
-    override fun groupKeys(input: MethodTransformer): MethodKey = MethodKey(input.targetClassName, input.name, input.desc)
+class CompiledScriptClassLoader(private val path: Path, parent: ClassLoader?) : ClassLoader(parent) {
 
-    override fun getKey(input: MethodNode, context: ITransformerVotingContext): MethodKey = MethodKey(context.className, input.name, input.desc) 
+    override fun findClass(name: String): Class<*> {
+        val resource = name.replace('.', '/') + ".class"
+        val bytes = getResourceAsStream(resource)?.use(InputStream::readBytes) ?: throw ClassNotFoundException(name)
 
-    override fun getTarget(key: MethodKey): Target = Target.targetMethod(key.owner, key.name, key.desc)
+        val protectionDomain = ProtectionDomain(null, null)
+        return defineClass(name, bytes, 0, bytes.size, protectionDomain)
+    }
 
-    data class MethodKey(val owner: String, val name: String, val desc: String) {
-        override fun toString(): String {
-            return "$owner.$name$desc"
+    override fun getResourceAsStream(name: String): InputStream? {
+        return try {
+            path.resolve(name).inputStream()
+        } catch (e: NoSuchFileException) {
+            null
         }
     }
 }

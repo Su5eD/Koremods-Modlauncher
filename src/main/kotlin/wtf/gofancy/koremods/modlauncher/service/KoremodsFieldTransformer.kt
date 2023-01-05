@@ -22,28 +22,24 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service
+package wtf.gofancy.koremods.modlauncher.service
 
-import java.io.InputStream
-import java.nio.file.Path
-import java.security.ProtectionDomain
-import kotlin.io.path.inputStream
+import cpw.mods.modlauncher.api.ITransformer
+import cpw.mods.modlauncher.api.ITransformer.Target
+import cpw.mods.modlauncher.api.ITransformerVotingContext
+import org.objectweb.asm.tree.FieldNode
+import wtf.gofancy.koremods.dsl.FieldTransformer
 
-class CompiledScriptClassLoader(private val path: Path, parent: ClassLoader?) : ClassLoader(parent) {
+object KoremodsFieldTransformer : KoremodsBaseTransformer<FieldNode, KoremodsFieldTransformer.FieldKey, FieldTransformer>(FieldTransformer::class.java), ITransformer<FieldNode> {
+    override fun groupKeys(input: FieldTransformer): FieldKey = FieldKey(input.targetClassName, input.name)
 
-    override fun findClass(name: String): Class<*> {
-        val resource = name.replace('.', '/') + ".class"
-        val bytes = getResourceAsStream(resource)?.use(InputStream::readBytes) ?: throw ClassNotFoundException(name)
+    override fun getKey(input: FieldNode, context: ITransformerVotingContext): FieldKey = FieldKey(context.className, input.name) 
 
-        val protectionDomain = ProtectionDomain(null, null)
-        return defineClass(name, bytes, 0, bytes.size, protectionDomain)
-    }
+    override fun getTarget(key: FieldKey): Target = Target.targetField(key.owner, key.name)
 
-    override fun getResourceAsStream(name: String): InputStream? {
-        return try {
-            path.resolve(name).inputStream()
-        } catch (e: NoSuchFileException) {
-            null
+    data class FieldKey(val owner: String, val name: String) {
+        override fun toString(): String {
+            return "$owner.$name"
         }
     }
 }

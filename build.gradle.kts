@@ -3,19 +3,11 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.matthewprenger.cursegradle.CurseArtifact
 import com.matthewprenger.cursegradle.CurseProject
-import fr.brouillard.oss.jgitver.GitVersionCalculator
-import fr.brouillard.oss.jgitver.Strategies
 import net.minecraftforge.gradle.common.util.RunConfig
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import wtf.gofancy.changelog.generateChangelog
 import java.util.Calendar
-
-buildscript {
-    dependencies {
-        classpath(group = "fr.brouillard.oss", name = "jgitver", version = "0.14.0")
-    }
-}
 
 plugins {
     kotlin("jvm")
@@ -26,10 +18,17 @@ plugins {
     id("com.matthewprenger.cursegradle") version "1.4.+"
     id("com.modrinth.minotaur") version "2.+"
     id("wtf.gofancy.git-changelog") version "1.0.+"
+    id("me.qoomon.git-versioning") version "6.3.+"
 }
 
 group = "wtf.gofancy.koremods"
-version = getGitVersion()
+version = "0.0.0-SNAPSHOT"
+
+gitVersioning.apply {
+    rev {
+        version = "\${describe.tag.version.major}.\${describe.tag.version.minor}.\${describe.tag.version.patch.plus.describe.distance}"
+    }
+}
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
@@ -128,6 +127,7 @@ minecraft {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         name = "Garden of Fancy"
@@ -148,7 +148,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.16")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.22")
 }
 
 license {
@@ -221,7 +221,7 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.4.2"
+        gradleVersion = "7.5.1"
         distributionType = Wrapper.DistributionType.BIN
     }
 
@@ -285,12 +285,4 @@ modrinth {
     uploadFile.set(fullJar.get())
     gameVersions.addAll(minecraftVersion)
     changelog.set(changelogText)
-}
-
-fun getGitVersion(): String {
-    val jgitver = GitVersionCalculator.location(rootDir)
-        .setNonQualifierBranches("1.19.x")
-        .setStrategy(Strategies.SCRIPT)
-        .setScript("print \"\${metadata.CURRENT_VERSION_MAJOR};\${metadata.CURRENT_VERSION_MINOR};\${metadata.CURRENT_VERSION_PATCH + metadata.COMMIT_DISTANCE}\"")
-    return jgitver.version
 }

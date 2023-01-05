@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service
+package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.modlauncher.api.IEnvironment
 import cpw.mods.modlauncher.api.IModuleLayerManager

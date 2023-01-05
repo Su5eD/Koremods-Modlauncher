@@ -22,25 +22,24 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service;
+package wtf.gofancy.koremods.modlauncher.service
 
-import net.minecraftforge.fml.loading.moddiscovery.AbstractJarFileModLocator;
+import cpw.mods.modlauncher.api.ITransformer
+import cpw.mods.modlauncher.api.ITransformer.Target
+import cpw.mods.modlauncher.api.ITransformerVotingContext
+import org.objectweb.asm.tree.MethodNode
+import wtf.gofancy.koremods.dsl.MethodTransformer
 
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.stream.Stream;
+object KoremodsMethodTransformer : KoremodsBaseTransformer<MethodNode, KoremodsMethodTransformer.MethodKey, MethodTransformer>(MethodTransformer::class.java), ITransformer<MethodNode> {
+    override fun groupKeys(input: MethodTransformer): MethodKey = MethodKey(input.targetClassName, input.name, input.desc)
 
-public class KoremodsModLocator extends AbstractJarFileModLocator {
-    @Override
-    public String name() {
-        return "koremods";
-    }
+    override fun getKey(input: MethodNode, context: ITransformerVotingContext): MethodKey = MethodKey(context.className, input.name, input.desc) 
 
-    @Override
-    public void initArguments(Map<String, ?> arguments) {}
+    override fun getTarget(key: MethodKey): Target = Target.targetMethod(key.owner, key.name, key.desc)
 
-    @Override
-    public Stream<Path> scanCandidates() {
-        return Stream.of(KoremodsServiceWrapper.modJijPath);
+    data class MethodKey(val owner: String, val name: String, val desc: String) {
+        override fun toString(): String {
+            return "$owner.$name$desc"
+        }
     }
 }

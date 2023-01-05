@@ -22,24 +22,39 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service
+package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.modlauncher.api.ITransformer
 import cpw.mods.modlauncher.api.ITransformer.Target
 import cpw.mods.modlauncher.api.ITransformerVotingContext
-import org.objectweb.asm.tree.FieldNode
-import wtf.gofancy.koremods.dsl.FieldTransformer
+import cpw.mods.modlauncher.api.TransformerVoteResult
+import wtf.gofancy.koremods.applyTransform
+import wtf.gofancy.koremods.dsl.Transformer
+import wtf.gofancy.koremods.launch.KoremodsLaunch
 
-object KoremodsFieldTransformer : KoremodsBaseTransformer<FieldNode, KoremodsFieldTransformer.FieldKey, FieldTransformer>(FieldTransformer::class.java), ITransformer<FieldNode> {
-    override fun groupKeys(input: FieldTransformer): FieldKey = FieldKey(input.targetClassName, input.name)
+abstract class KoremodsBaseTransformer<T : Any, K : Any, V : Transformer<T>>(cls: Class<V>) : ITransformer<T> {
+    private val transformers: Map<K, List<V>> = KoremodsLaunch.LOADER!!.getAllTransformers()
+        .filterIsInstance(cls)
+        .groupBy(::groupKeys)
 
-    override fun getKey(input: FieldNode, context: ITransformerVotingContext): FieldKey = FieldKey(context.className, input.name) 
+    abstract fun groupKeys(input: V): K
 
-    override fun getTarget(key: FieldKey): Target = Target.targetField(key.owner, key.name)
+    abstract fun getKey(input: T, context: ITransformerVotingContext): K
 
-    data class FieldKey(val owner: String, val name: String) {
-        override fun toString(): String {
-            return "$owner.$name"
-        }
+    abstract fun getTarget(key: K): Target
+    
+    override fun transform(input: T, context: ITransformerVotingContext): T {
+        val key: K = getKey(input, context)
+        val list = transformers[key] ?: throw IllegalStateException("No transformers for $input found. Have they disappeared?")
+
+        applyTransform(key, list, input)
+
+        return input
     }
+
+    override fun castVote(context: ITransformerVotingContext): TransformerVoteResult = TransformerVoteResult.YES
+
+    override fun targets(): Set<Target> = transformers.keys
+        .map(::getTarget)
+        .toSet()
 }

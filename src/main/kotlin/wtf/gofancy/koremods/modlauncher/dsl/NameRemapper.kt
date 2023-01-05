@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.dsl
+package wtf.gofancy.koremods.modlauncher.dsl
 
 import cpw.mods.modlauncher.Launcher
 import cpw.mods.modlauncher.api.INameMappingService.Domain

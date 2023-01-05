@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.service
+package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.jarhandling.SecureJar
 import net.minecraftforge.fml.loading.FMLEnvironment
@@ -35,6 +35,10 @@ import org.apache.logging.log4j.LogManager
 import wtf.gofancy.koremods.dsl.*
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.launch.KoremodsLaunchPlugin
+import wtf.gofancy.koremods.modlauncher.dsl.mapClassName
+import wtf.gofancy.koremods.modlauncher.dsl.mapFieldName
+import wtf.gofancy.koremods.modlauncher.dsl.mapMethodDesc
+import wtf.gofancy.koremods.modlauncher.dsl.mapMethodName
 import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 import java.nio.file.FileSystems
 import java.nio.file.Path
@@ -46,8 +50,12 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     override val splashScreenAvailable: Boolean
         get() = FMLEnvironment.dist.isClient
 
+    override val allowedClasses: List<String> = listOf(
+        "wtf.gofancy.koremods.modlauncher.dsl"
+    )
+
     override fun appendLogMessage(level: Level, message: String) {
-        StartupMessageManager.addModMessage("[${KoremodsBlackboard.NAME}] $message")
+        StartupMessageManager.addModMessage("[Koremods] $message")
     }
 
     override fun createCompiledScriptClassLoader(path: Path, parent: ClassLoader?): ClassLoader {
