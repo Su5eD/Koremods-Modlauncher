@@ -4,10 +4,15 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.matthewprenger.cursegradle.CurseArtifact
 import com.matthewprenger.cursegradle.CurseProject
 import net.minecraftforge.gradle.common.util.RunConfig
+import net.minecraftforge.jarjar.metadata.*
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
+import org.apache.maven.artifact.versioning.VersionRange
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import wtf.gofancy.changelog.generateChangelog
-import java.util.Calendar
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import java.util.*
 
 plugins {
     kotlin("jvm")
@@ -87,11 +92,11 @@ configurations {
     implementation {
         extendsFrom(script)
     }
-    
+
     "modImplementation" {
         extendsFrom(minecraft.get())
     }
-    
+
     "serviceImplementation" {
         extendsFrom(implementation.get())
     }
@@ -152,7 +157,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.23")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.5.0")
 }
 
 license {
@@ -179,39 +184,56 @@ val kotlinDepsJar by tasks.registering(ShadowJar::class) {
 
 val modJar by tasks.registering(Jar::class) {
     dependsOn("modClasses")
-    
+
     from(mod.output)
     manifest.attributes(manifestAttributes)
-    
+
     archiveClassifier.set("mod")
 }
 
 val serviceJar by tasks.registering(Jar::class) {
     dependsOn("serviceClasses")
-    
+
     from(service.output)
     manifest.attributes(manifestAttributes)
-    
+
     archiveClassifier.set("service")
 }
 
 val fullJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.jar, kotlinDepsJar, modJar, serviceJar)
+    dependsOn(tasks.jar, kotlinDepsJar, serviceJar)
     val kotlinDeps = kotlinDepsJar.flatMap(Jar::getArchiveFile)
     val modJarFile = modJar.flatMap(Jar::getArchiveFile)
     val serviceJarFile = serviceJar.flatMap(Jar::getArchiveFile)
 
+    val metadataPath = project.buildDir.toPath().resolve("fullJar/metadata.json")
+    metadataPath.toFile().parentFile.mkdirs()
+    val metadata = Metadata(
+        listOf(
+            ContainedJarMetadata(
+                ContainedJarIdentifier(group, "${project.name}-mod"),
+                ContainedVersion(
+                    VersionRange.createFromVersionSpec("[${project.version}, )"),
+                    DefaultArtifactVersion(project.version.toString())
+                ),
+                "META-INF/jarjar/" + modJarFile.get().asFile.name,
+                false
+            )
+        )
+    )
+    Files.deleteIfExists(metadataPath)
+    Files.write(metadataPath, MetadataIOHandler.toLines(metadata), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+
     from(zipTree(tasks.jar.get().archiveFile))
     doFirst { from(zipTree(script.singleFile)) }
     from(kotlinDeps)
-    from(modJarFile)
     from(serviceJarFile)
+    from(files(modJarFile, metadataPath)) { into("META-INF/jarjar") }
 
     manifest {
         attributes(manifestAttributes)
         attributes(
             "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name,
-            "Additional-Dependencies-Mod" to modJarFile.get().asFile.name,
             "Additional-Dependencies-Service" to serviceJarFile.get().asFile.name
         )
     }
@@ -221,13 +243,13 @@ tasks {
     jar {
         manifest {
             attributes(manifestAttributes)
-            
+
             attributes("FMLModType" to "LIBRARY")
         }
 
         archiveClassifier.set("slim")
     }
-    
+
     named<Jar>("sourcesJar") {
         from(service.allSource)
         from(mod.allSource)
