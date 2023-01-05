@@ -43,7 +43,11 @@ import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
 import java.nio.file.FileSystems
 import java.nio.file.Path
 
-object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
+class ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
+    companion object {
+        val INSTANCE = ModlauncherKoremodsLaunchPlugin()
+    }
+    
     private val LOGGER = LogManager.getLogger()
     private val DEFAULT_FS = FileSystems.getDefault()
 
@@ -52,6 +56,10 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
 
     override val allowedClasses: List<String> = listOf(
         "wtf.gofancy.koremods.modlauncher.dsl"
+    )
+
+    override val defaultImports: List<String> = listOf(
+        "wtf.gofancy.koremods.modlauncher.dsl.*"
     )
 
     override fun appendLogMessage(level: Level, message: String) {

@@ -47,13 +47,13 @@ class KoremodsTransformationService : ITransformationService {
         val modsDir = gameDir.resolve("mods")
         val discoveryURLs = getModClasses(environment)
 
-        KoremodsLaunch.launch(EvalLoad, ModlauncherKoremodsLaunchPlugin, configDir, modsDir, discoveryURLs)
+        KoremodsLaunch.launch(EvalLoad, configDir, modsDir, discoveryURLs)
 
         return emptyList()
     }
 
     override fun completeScan(layerManager: IModuleLayerManager): List<ITransformationService.Resource> {
-        ModlauncherKoremodsLaunchPlugin.verifyScriptPacks()
+        ModlauncherKoremodsLaunchPlugin.INSTANCE.verifyScriptPacks()
 
         return emptyList()
     }

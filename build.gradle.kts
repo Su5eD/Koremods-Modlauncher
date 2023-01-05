@@ -54,6 +54,7 @@ val manifestAttributes = mapOf(
 )
 
 val mod: SourceSet by sourceSets.creating
+val service: SourceSet by sourceSets.creating
 val script: Configuration by configurations.creating {
     attributes {
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
@@ -89,6 +90,10 @@ configurations {
     
     "modImplementation" {
         extendsFrom(minecraft.get())
+    }
+    
+    "serviceImplementation" {
+        extendsFrom(implementation.get())
     }
 
     runtimeElements {
@@ -127,7 +132,6 @@ minecraft {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
     maven {
         name = "Garden of Fancy"
@@ -148,7 +152,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.22")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.4.23")
 }
 
 license {
@@ -182,21 +186,33 @@ val modJar by tasks.registering(Jar::class) {
     archiveClassifier.set("mod")
 }
 
+val serviceJar by tasks.registering(Jar::class) {
+    dependsOn("serviceClasses")
+    
+    from(service.output)
+    manifest.attributes(manifestAttributes)
+    
+    archiveClassifier.set("service")
+}
+
 val fullJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.jar, kotlinDepsJar, modJar)
+    dependsOn(tasks.jar, kotlinDepsJar, modJar, serviceJar)
     val kotlinDeps = kotlinDepsJar.flatMap(Jar::getArchiveFile)
     val modJarFile = modJar.flatMap(Jar::getArchiveFile)
+    val serviceJarFile = serviceJar.flatMap(Jar::getArchiveFile)
 
     from(zipTree(tasks.jar.get().archiveFile))
     doFirst { from(zipTree(script.singleFile)) }
     from(kotlinDeps)
     from(modJarFile)
+    from(serviceJarFile)
 
     manifest {
         attributes(manifestAttributes)
         attributes(
             "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name,
-            "Additional-Dependencies-Mod" to modJarFile.get().asFile.name
+            "Additional-Dependencies-Mod" to modJarFile.get().asFile.name,
+            "Additional-Dependencies-Service" to serviceJarFile.get().asFile.name
         )
     }
 }
@@ -210,6 +226,11 @@ tasks {
         }
 
         archiveClassifier.set("slim")
+    }
+    
+    named<Jar>("sourcesJar") {
+        from(service.allSource)
+        from(mod.allSource)
     }
 
     whenTaskAdded {

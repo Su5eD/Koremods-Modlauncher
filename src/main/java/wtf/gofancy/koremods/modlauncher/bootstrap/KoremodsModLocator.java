@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.modlauncher.service;
+package wtf.gofancy.koremods.modlauncher.bootstrap;
 
 import net.minecraftforge.fml.loading.moddiscovery.AbstractJarFileModLocator;
 
@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class KoremodsModLocator extends AbstractJarFileModLocator {
+public class KoremodsModLocator extends AbstractJarFileModLocator { // TODO Use JiJ
     @Override
     public String name() {
         return "koremods";

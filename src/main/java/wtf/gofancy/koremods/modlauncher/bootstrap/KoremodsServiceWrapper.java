@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package wtf.gofancy.koremods.modlauncher.service;
+package wtf.gofancy.koremods.modlauncher.bootstrap;
 
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.IEnvironment;
@@ -43,13 +43,14 @@ import java.util.jar.Manifest;
 public class KoremodsServiceWrapper implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String SERVICE_NAME = "koremods.asm.service";
-    
+
     private static final String JIJ_ATTRIBUTE_PREFIX = "Additional-Dependencies-";
     private static final String KOTLIN_JIJ_NAME = "Kotlin";
     private static final String MOD_JIJ_NAME = "Mod";
+    private static final String SERVICE_JIJ_NAME = "Service";
 
     static Path modJijPath;
-    
+
     private ITransformationService actualTransformationService;
 
     @Override
@@ -69,10 +70,11 @@ public class KoremodsServiceWrapper implements ITransformationService {
             manifest.read(Files.newInputStream(manifestPath));
             Attributes attributes = manifest.getMainAttributes();
             SecureJar kotlinJij = SecureJar.from(getJarInJar(path, attributes, KOTLIN_JIJ_NAME));
+            SecureJar serviceJij = SecureJar.from(getJarInJar(path, attributes, SERVICE_JIJ_NAME));
             modJijPath = getJarInJar(path, attributes, MOD_JIJ_NAME);
 
             ClassLoader parentCL = getClass().getClassLoader();
-            ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, kotlinJij);
+            ClassLoader classLoader = new DependencyClassLoader(new URL[]{jarLocation}, parentCL, List.of(kotlinJij, serviceJij));
 
             Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.modlauncher.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
@@ -100,11 +102,11 @@ public class KoremodsServiceWrapper implements ITransformationService {
     public List<ITransformer> transformers() {
         return this.actualTransformationService.transformers();
     }
-    
+
     private Path getJarInJar(Path path, Attributes attributes, String name) {
         String depName = attributes.getValue(JIJ_ATTRIBUTE_PREFIX + name);
         if (depName == null) throw new IllegalArgumentException("Required " + name + " embedded jar not found");
-        
+
         return path.resolve(depName);
     }
 }
