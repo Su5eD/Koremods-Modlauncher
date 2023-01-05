@@ -82,6 +82,36 @@ val embeddedRuntimeElements by configurations.creating {
     }
 }
 
+val kotlinDepsJar by tasks.registering(ShadowJar::class) {
+    configurations = listOf(shadeKotlin)
+    exclude("META-INF/versions/**")
+
+    dependencies {
+        exclude(dependency("net.java.dev.jna:jna"))
+    }
+
+    archiveBaseName.set("koremods-deps-kotlin")
+    archiveVersion.set(kotlinVersion)
+}
+
+val modJar by tasks.registering(Jar::class) {
+    dependsOn("modClasses")
+
+    from(mod.output)
+    manifest.attributes(manifestAttributes)
+
+    archiveClassifier.set("mod")
+}
+
+val serviceJar by tasks.registering(Jar::class) {
+    dependsOn("serviceClasses")
+
+    from(service.output)
+    manifest.attributes(manifestAttributes)
+
+    archiveClassifier.set("service")
+}
+
 configurations {
     all {
         if (System.getenv("REFRESH_DYNAMIC_VERSIONS").toBoolean()) {
@@ -104,11 +134,17 @@ configurations {
     runtimeElements {
         setExtendsFrom(setOf(script))
 
+        outgoing { 
+            artifact(serviceJar)
+        }
         attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(SCRIPT_COMPILER_CLASSPATH_USAGE))
     }
 
     apiElements {
         setExtendsFrom(setOf(script))
+        outgoing { 
+            artifact(serviceJar)
+        }
     }
 }
 
@@ -170,71 +206,24 @@ license {
     }
 }
 
-val kotlinDepsJar by tasks.registering(ShadowJar::class) {
-    configurations = listOf(shadeKotlin)
-    exclude("META-INF/versions/**")
-
-    dependencies {
-        exclude(dependency("net.java.dev.jna:jna"))
-    }
-
-    archiveBaseName.set("koremods-deps-kotlin")
-    archiveVersion.set(kotlinVersion)
-}
-
-val modJar by tasks.registering(Jar::class) {
-    dependsOn("modClasses")
-
-    from(mod.output)
-    manifest.attributes(manifestAttributes)
-
-    archiveClassifier.set("mod")
-}
-
-val serviceJar by tasks.registering(Jar::class) {
-    dependsOn("serviceClasses")
-
-    from(service.output)
-    manifest.attributes(manifestAttributes)
-
-    archiveClassifier.set("service")
-}
-
 val fullJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.jar, kotlinDepsJar, serviceJar)
+    dependsOn(tasks.jar, kotlinDepsJar, serviceJar, modJar)
     val kotlinDeps = kotlinDepsJar.flatMap(Jar::getArchiveFile)
     val modJarFile = modJar.flatMap(Jar::getArchiveFile)
     val serviceJarFile = serviceJar.flatMap(Jar::getArchiveFile)
-
-    val metadataPath = project.buildDir.toPath().resolve("fullJar/metadata.json")
-    metadataPath.toFile().parentFile.mkdirs()
-    val metadata = Metadata(
-        listOf(
-            ContainedJarMetadata(
-                ContainedJarIdentifier(group, "${project.name}-mod"),
-                ContainedVersion(
-                    VersionRange.createFromVersionSpec("[${project.version}, )"),
-                    DefaultArtifactVersion(project.version.toString())
-                ),
-                "META-INF/jarjar/" + modJarFile.get().asFile.name,
-                false
-            )
-        )
-    )
-    Files.deleteIfExists(metadataPath)
-    Files.write(metadataPath, MetadataIOHandler.toLines(metadata), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
 
     from(zipTree(tasks.jar.get().archiveFile))
     doFirst { from(zipTree(script.singleFile)) }
     from(kotlinDeps)
     from(serviceJarFile)
-    from(files(modJarFile, metadataPath)) { into("META-INF/jarjar") }
+    from(modJarFile)
 
     manifest {
         attributes(manifestAttributes)
         attributes(
             "Additional-Dependencies-Kotlin" to kotlinDeps.get().asFile.name,
-            "Additional-Dependencies-Service" to serviceJarFile.get().asFile.name
+            "Additional-Dependencies-Service" to serviceJarFile.get().asFile.name,
+            "Additional-Dependencies-Mod" to modJarFile.get().asFile.name
         )
     }
 }
