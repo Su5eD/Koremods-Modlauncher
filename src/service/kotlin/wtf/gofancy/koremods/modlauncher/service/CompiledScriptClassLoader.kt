@@ -24,6 +24,7 @@
 
 package wtf.gofancy.koremods.modlauncher.service
 
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Path
 import java.security.ProtectionDomain
@@ -43,6 +44,8 @@ class CompiledScriptClassLoader(private val path: Path, parent: ClassLoader?) : 
         return try {
             path.resolve(name).inputStream()
         } catch (e: NoSuchFileException) {
+            null
+        } catch (e: FileNotFoundException) {
             null
         }
     }
