@@ -193,7 +193,9 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.5.0")
+    "modImplementation"(sourceSets.main.map { it.output })
+
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.5.3")
 }
 
 license {
@@ -306,6 +308,7 @@ curseforge {
         })
         addGameVersion("Forge")
         addGameVersion(minecraftVersion)
+        addGameVersion("1.19.2")
     })
 }
 
@@ -315,6 +318,6 @@ modrinth {
     versionName.set("Koremods ${project.version}")
     versionType.set(publishReleaseType)
     uploadFile.set(fullJar.get())
-    gameVersions.addAll(minecraftVersion)
+    gameVersions.addAll(minecraftVersion, "1.19.2")
     changelog.set(changelogText)
 }

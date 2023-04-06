@@ -25,15 +25,53 @@
 package wtf.gofancy.koremods.mod;
 
 import com.mojang.logging.LogUtils;
+import cpw.mods.modlauncher.Launcher;
+import cpw.mods.modlauncher.TransformationServiceDecorator;
 import net.minecraftforge.fml.common.Mod;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import wtf.gofancy.koremods.modlauncher.bootstrap.KoremodsServiceWrapper;
+
+import java.lang.reflect.Field;
+import java.util.Map;
 
 @Mod(KoremodsMod.MODID)
 public class KoremodsMod {
     public static final String MODID = "koremods";
     public static final Logger LOGGER = LogUtils.getLogger();
-    
+
     public KoremodsMod() {
         LOGGER.info("Constructed Koremods mod instance");
+
+        KoremodsServiceWrapper wrapper = getServiceWrapper();
+        if (wrapper != null) {
+            Throwable serviceException = wrapper.getServiceException();
+            if (serviceException != null) {
+                throw new RuntimeException("Koremods loading error", serviceException);
+            }
+        }
+    }
+
+    @Nullable
+    private KoremodsServiceWrapper getServiceWrapper() {
+        try {
+            Field handlerField = Launcher.class.getDeclaredField("transformationServicesHandler");
+            handlerField.setAccessible(true);
+            Field serviceLookupField = handlerField.getType().getDeclaredField("serviceLookup");
+            serviceLookupField.setAccessible(true);
+            Field serviceField = TransformationServiceDecorator.class.getDeclaredField("service");
+            serviceField.setAccessible(true);
+
+            Object handler = handlerField.get(Launcher.INSTANCE);
+            //noinspection unchecked
+            Map<String, TransformationServiceDecorator> serviceLookup = (Map<String, TransformationServiceDecorator>) serviceLookupField.get(handler);
+            TransformationServiceDecorator decorator = serviceLookup.get(KoremodsServiceWrapper.SERVICE_NAME);
+            if (decorator != null) {
+                return (KoremodsServiceWrapper) serviceField.get(decorator);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return null;
     }
 }

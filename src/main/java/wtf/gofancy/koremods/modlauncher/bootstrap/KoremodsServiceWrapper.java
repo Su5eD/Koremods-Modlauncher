@@ -42,7 +42,7 @@ import java.util.jar.Manifest;
 
 public class KoremodsServiceWrapper implements ITransformationService {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final String SERVICE_NAME = "koremods.asm.service";
+    public static final String SERVICE_NAME = "koremods.asm.service";
 
     private static final String JIJ_ATTRIBUTE_PREFIX = "Additional-Dependencies-";
     private static final String KOTLIN_JIJ_NAME = "Kotlin";
@@ -52,6 +52,11 @@ public class KoremodsServiceWrapper implements ITransformationService {
     static Path modJijPath;
 
     private ITransformationService actualTransformationService;
+    private Throwable serviceException;
+
+    public Throwable getServiceException() {
+        return serviceException;
+    }
 
     @Override
     public String name() {
@@ -78,35 +83,44 @@ public class KoremodsServiceWrapper implements ITransformationService {
 
             Object actualITS = classLoader.loadClass("wtf.gofancy.koremods.modlauncher.service.KoremodsTransformationService").getConstructor().newInstance();
             this.actualTransformationService = (ITransformationService) actualITS;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Throwable t) {
+            LOGGER.error("Error initializing Koremods Service", t);
+            this.serviceException = t;
         }
     }
 
     @Override
     public List<Resource> beginScanning(IEnvironment environment) {
-        return this.actualTransformationService.beginScanning(environment);
+        if (this.serviceException == null) {
+            try {
+                return this.actualTransformationService.beginScanning(environment);
+            } catch (Throwable t) {
+                LOGGER.error("Error launching Koremods instance", t);
+                this.serviceException = t;
+            }
+        }
+        return List.of();
     }
 
     @Override
     public List<Resource> completeScan(IModuleLayerManager layerManager) {
-        return this.actualTransformationService.completeScan(layerManager);
+        return this.serviceException == null ? this.actualTransformationService.completeScan(layerManager) : List.of();
     }
 
     @Override
-    public void onLoad(IEnvironment env, Set<String> otherServices) {
-    }
+    public void onLoad(IEnvironment env, Set<String> otherServices) {}
 
     @SuppressWarnings("rawtypes")
     @Override
     public List<ITransformer> transformers() {
-        return this.actualTransformationService.transformers();
+        return this.serviceException == null ? this.actualTransformationService.transformers() : List.of();
     }
 
     private Path getJarInJar(Path path, Attributes attributes, String name) {
         String depName = attributes.getValue(JIJ_ATTRIBUTE_PREFIX + name);
-        if (depName == null) throw new IllegalArgumentException("Required " + name + " embedded jar not found");
-
+        if (depName == null) {
+            throw new IllegalArgumentException("Required " + name + " embedded jar not found");
+        }
         return path.resolve(depName);
     }
 }
