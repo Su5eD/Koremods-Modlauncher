@@ -5,25 +5,23 @@ import com.matthewprenger.cursegradle.CurseArtifact
 import com.matthewprenger.cursegradle.CurseProject
 import net.minecraftforge.gradle.common.util.RunConfig
 import net.minecraftforge.jarjar.metadata.*
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion
-import org.apache.maven.artifact.versioning.VersionRange
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import wtf.gofancy.changelog.generateChangelog
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
+import wtf.gofancy.koremods.gradle.KoremodsGradlePlugin
 import java.util.*
 
 plugins {
     kotlin("jvm")
     `maven-publish`
     id("net.minecraftforge.gradle") version "5.1.+"
+    id("wtf.gofancy.koremods.gradle") version "0.1.23" apply false
     id("com.github.johnrengelman.shadow") version "7.1.0" apply false
     id("org.cadixdev.licenser") version "0.6.1"
-    id("com.matthewprenger.cursegradle") version "1.4.+"
-    id("com.modrinth.minotaur") version "2.+"
     id("wtf.gofancy.git-changelog") version "1.0.+"
     id("me.qoomon.git-versioning") version "6.3.+"
+    id("com.matthewprenger.cursegradle") version "1.4.+"
+    id("com.modrinth.minotaur") version "2.+"
 }
 
 group = "wtf.gofancy.koremods"
@@ -40,14 +38,14 @@ java {
     withSourcesJar()
 }
 
-val SCRIPT_COMPILER_CLASSPATH_USAGE = "script-compiler-classpath"
 val kotlinVersion: String by project
+val koremodsScriptVersion: String by project
 val minecraftVersion: String by project
 val forgeVersion: String by project
 val curseForgeProjectID: String by project
 val modrinthProjectID: String by project
 val publishReleaseType = System.getenv("PUBLISH_RELEASE_TYPE") ?: "release"
-val changelogText = generateChangelog(1, true)
+val changelogText = provider { generateChangelog(1, true) }
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -137,7 +135,7 @@ configurations {
         outgoing { 
             artifact(serviceJar)
         }
-        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(SCRIPT_COMPILER_CLASSPATH_USAGE))
+        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(KoremodsGradlePlugin.SCRIPT_COMPILER_CLASSPATH_USAGE))
     }
 
     apiElements {
@@ -195,7 +193,7 @@ dependencies {
 
     "modImplementation"(sourceSets.main.map { it.output })
 
-    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = "0.5.3")
+    script(group = "wtf.gofancy.koremods", name = "koremods-script", version = koremodsScriptVersion)
 }
 
 license {
@@ -301,14 +299,13 @@ curseforge {
     project(closureOf<CurseProject> {
         id = curseForgeProjectID
         changelogType = "markdown"
-        changelog = changelogText
+        changelog = changelogText.get()
         releaseType = publishReleaseType
         mainArtifact(fullJar.get(), closureOf<CurseArtifact> {
             displayName = "Koremods ${project.version}"
         })
         addGameVersion("Forge")
         addGameVersion(minecraftVersion)
-        addGameVersion("1.19.2")
     })
 }
 
@@ -318,6 +315,6 @@ modrinth {
     versionName.set("Koremods ${project.version}")
     versionType.set(publishReleaseType)
     uploadFile.set(fullJar.get())
-    gameVersions.addAll(minecraftVersion, "1.19.2")
+    gameVersions.addAll(minecraftVersion)
     changelog.set(changelogText)
 }

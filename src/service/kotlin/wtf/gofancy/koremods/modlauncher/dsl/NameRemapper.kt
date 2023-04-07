@@ -27,7 +27,11 @@ package wtf.gofancy.koremods.modlauncher.dsl
 import cpw.mods.modlauncher.Launcher
 import cpw.mods.modlauncher.api.INameMappingService.Domain
 import org.objectweb.asm.Type
+import wtf.gofancy.koremods.dsl.TransformerPropertyKeys
 import java.util.*
+import kotlin.script.experimental.util.PropertiesCollection
+
+val TransformerPropertyKeys.autoRemap by PropertiesCollection.key(true)
 
 fun mapClassName(name: String): String {
     return map(name, Domain.CLASS)

@@ -25,37 +25,65 @@
 package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.jarhandling.SecureJar
-import net.minecraftforge.fml.loading.FMLEnvironment
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.fml.loading.progress.StartupMessageManager
 import net.minecraftforge.forgespi.language.IModInfo
 import org.apache.commons.lang3.SystemUtils
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
-import wtf.gofancy.koremods.dsl.*
+import wtf.gofancy.koremods.dsl.ClassTransformerParams
+import wtf.gofancy.koremods.dsl.FieldTransformerParams
+import wtf.gofancy.koremods.dsl.MethodTransformerParams
+import wtf.gofancy.koremods.dsl.TransformerPropertiesStore
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import wtf.gofancy.koremods.launch.KoremodsLaunchPlugin
-import wtf.gofancy.koremods.modlauncher.dsl.mapClassName
-import wtf.gofancy.koremods.modlauncher.dsl.mapFieldName
-import wtf.gofancy.koremods.modlauncher.dsl.mapMethodDesc
-import wtf.gofancy.koremods.modlauncher.dsl.mapMethodName
-import wtf.gofancy.koremods.prelaunch.KoremodsBlackboard
+import wtf.gofancy.koremods.modlauncher.dsl.*
 import java.nio.file.FileSystems
 import java.nio.file.Path
 
 class ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     companion object {
-        val INSTANCE = ModlauncherKoremodsLaunchPlugin()
-    }
-    
-    private val LOGGER = LogManager.getLogger()
-    private val DEFAULT_FS = FileSystems.getDefault()
+        private val LOGGER = LogManager.getLogger()
+        private val DEFAULT_FS = FileSystems.getDefault()
 
-    override val splashScreenAvailable: Boolean
-        get() = FMLEnvironment.dist.isClient
+        internal fun verifyScriptPacks() {
+            val modList = FMLLoader.getLoadingModList()
+            val mods = modList.mods
+                .map(IModInfo::getModId)
+                .associateWith { modid -> modList.getModFileById(modid).file.filePath }
+
+            LOGGER.info("Verifying script packs")
+
+            KoremodsLaunch.LOADER!!.scriptPacks.forEach { pack ->
+                mods.forEach { (modid, source) ->
+                    if (pack.namespace == modid && pack.path.normalize().toAbsolutePath() != source) {
+                        throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
+                    } else if (pack.path == source && pack.namespace != modid) {
+                        throw RuntimeException("Namespace '${pack.namespace}' doesn't match the modid '$modid' found at the same location")
+                    }
+                }
+            }
+        }
+
+        private fun getPathToScript(base: Path): Path {
+            if (base.fileSystem == DEFAULT_FS) {
+                return SecureJar.from(base).rootPath
+            } else if (base.fileSystem.provider().scheme == "jar") {
+                val uri = base.toUri().schemeSpecificPart.removePrefix("file://").let { str ->
+                    if (SystemUtils.IS_OS_WINDOWS) str.removePrefix("/")
+                    else str
+                }
+                val parts = uri.split("!/")
+                val jar = SecureJar.from(Path.of(parts[0]))
+                val scriptJar = SecureJar.from(jar.getPath(parts[1]))
+                return scriptJar.rootPath
+            }
+            throw RuntimeException("Unknown base path file system")
+        }
+    }
 
     override val allowedClasses: List<String> = listOf(
-        "wtf.gofancy.koremods.modlauncher.dsl"
+        "wtf.gofancy.koremods.modlauncher.dsl."
     )
 
     override val defaultImports: List<String> = listOf(
@@ -71,51 +99,18 @@ class ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
         return CompiledScriptClassLoader(scriptPath, parent)
     }
 
-    override fun mapClassTransformer(params: ClassTransformerParams): ClassTransformerParams {
-        return params.copy(name = mapClassName(params.name))
+    override fun mapClassTransformer(params: ClassTransformerParams, props: TransformerPropertiesStore): ClassTransformerParams {
+        return if (props[TransformerPropertiesStore.autoRemap] == true) params.copy(name = mapClassName(params.name))
+        else params
     }
 
-    override fun mapMethodTransformer(params: MethodTransformerParams): MethodTransformerParams {
-        return params.copy(owner = mapClassName(params.owner), name = mapMethodName(params.name), desc = mapMethodDesc(params.desc))
+    override fun mapMethodTransformer(params: MethodTransformerParams, props: TransformerPropertiesStore): MethodTransformerParams {
+        return if (props[TransformerPropertiesStore.autoRemap] == true) params.copy(owner = mapClassName(params.owner), name = mapMethodName(params.name), desc = mapMethodDesc(params.desc))
+        else params
     }
 
-    override fun mapFieldTransformer(params: FieldTransformerParams): FieldTransformerParams {
-        return params.copy(owner = mapClassName(params.owner), name = mapFieldName(params.name))
-    }
-
-    internal fun verifyScriptPacks() {
-        val modList = FMLLoader.getLoadingModList()
-        val mods = modList.mods
-            .map(IModInfo::getModId)
-            .associateWith { modid -> modList.getModFileById(modid).file.filePath }
-        
-        LOGGER.info("Verifying script packs")
-
-        KoremodsLaunch.LOADER!!.scriptPacks.forEach { pack ->
-            mods.forEach { (modid, source) ->
-                if (pack.namespace == modid && pack.path.normalize().toAbsolutePath() != source) {
-                    throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
-                } else if (pack.path == source && pack.namespace != modid) {
-                    throw RuntimeException("Namespace '${pack.namespace}' doesn't match the modid '$modid' found at the same location")
-                }
-            }
-        }
-    }
-    
-    private fun getPathToScript(base: Path): Path {
-        if (base.fileSystem == DEFAULT_FS) {
-            return SecureJar.from(base).rootPath
-        }
-        else if (base.fileSystem.provider().scheme == "jar") {
-            val uri = base.toUri().schemeSpecificPart.removePrefix("file://").let { str -> 
-                if (SystemUtils.IS_OS_WINDOWS) str.removePrefix("/")
-                else str
-            }
-            val parts = uri.split("!/")
-            val jar = SecureJar.from(Path.of(parts[0]))
-            val scriptJar = SecureJar.from(jar.getPath(parts[1]))
-            return scriptJar.rootPath
-        }
-        throw RuntimeException("Unknown base path file system")
+    override fun mapFieldTransformer(params: FieldTransformerParams, props: TransformerPropertiesStore): FieldTransformerParams {
+        return if (props[TransformerPropertiesStore.autoRemap] == true) params.copy(owner = mapClassName(params.owner), name = mapFieldName(params.name))
+        else params
     }
 }

@@ -33,7 +33,9 @@ import net.minecraftforge.fml.loading.targets.CommonUserdevLaunchHandler
 import wtf.gofancy.koremods.EvalLoad
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import java.nio.file.Path
+import kotlin.io.path.div
 
+@Suppress("unused")
 class KoremodsTransformationService : ITransformationService {
 
     override fun name(): String = throw UnsupportedOperationException()
@@ -43,17 +45,16 @@ class KoremodsTransformationService : ITransformationService {
     override fun beginScanning(environment: IEnvironment): List<ITransformationService.Resource> {
         val gameDir = environment.getProperty(IEnvironment.Keys.GAMEDIR.get())
             .orElseThrow { IllegalStateException("Could not find game directory") }
-        val configDir = gameDir.resolve("config")
-        val modsDir = gameDir.resolve("mods")
+        val modsDir = gameDir / "mods"
         val discoveryURLs = getModClasses(environment)
 
-        KoremodsLaunch.launch(EvalLoad, configDir, modsDir, discoveryURLs)
+        KoremodsLaunch.launch(EvalLoad, modsDir, discoveryURLs)
 
         return emptyList()
     }
 
     override fun completeScan(layerManager: IModuleLayerManager): List<ITransformationService.Resource> {
-        ModlauncherKoremodsLaunchPlugin.INSTANCE.verifyScriptPacks()
+        ModlauncherKoremodsLaunchPlugin.verifyScriptPacks()
 
         return emptyList()
     }
