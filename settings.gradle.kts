@@ -1,5 +1,5 @@
-pluginManagement { 
-    repositories { 
+pluginManagement {
+    repositories {
         gradlePluginPortal()
         maven {
             name = "MinecraftForge"
@@ -10,7 +10,7 @@ pluginManagement {
             url = uri("https://maven.gofancy.wtf/releases")
         }
     }
-    
+
     plugins {
         val kotlinVersion: String by settings
         kotlin("jvm") version kotlinVersion apply false
@@ -18,3 +18,5 @@ pluginManagement {
 }
 
 rootProject.name = "koremods-modlauncher"
+
+include("koremods-test")

@@ -64,7 +64,7 @@ val script: Configuration by configurations.creating {
     }
 }
 val shadeKotlin: Configuration by configurations.creating
-val embeddedRuntimeElements by configurations.creating {
+val embeddedRuntimeElements: Configuration by configurations.creating {
     attributes {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EMBEDDED))
@@ -232,10 +232,10 @@ tasks {
     jar {
         manifest {
             attributes(manifestAttributes)
-
             attributes("FMLModType" to "LIBRARY")
         }
 
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         archiveClassifier.set("slim")
     }
 

@@ -1,0 +1,28 @@
+modLoader="javafml"
+loaderVersion="[43,)"
+license="MIT"
+[[mods]]
+modId="koremods_test"
+version="${file.jarVersion}"
+displayName="Koremods Game Tests"
+authors="Su5eD"
+description="Game Testing Koremods"
+
+[[dependencies.koremods_test]]
+    modId="forge"
+    mandatory=true
+    versionRange="[43,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.koremods_test]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.19, 1.20)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.koremods_test]]
+    modId="koremods"
+    mandatory=true
+    versionRange="[0.6, 0.7)"
+    ordering="NONE"
+    side="BOTH"
