@@ -306,6 +306,7 @@ curseforge {
         })
         addGameVersion("Forge")
         addGameVersion(minecraftVersion)
+        addGameVersion("1.19.2")
     })
 }
 
@@ -315,6 +316,6 @@ modrinth {
     versionName.set("Koremods ${project.version}")
     versionType.set(publishReleaseType)
     uploadFile.set(fullJar.get())
-    gameVersions.addAll(minecraftVersion)
+    gameVersions.addAll(minecraftVersion, "1.19.2")
     changelog.set(changelogText)
 }

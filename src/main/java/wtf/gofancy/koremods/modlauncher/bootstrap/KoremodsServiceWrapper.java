@@ -104,7 +104,15 @@ public class KoremodsServiceWrapper implements ITransformationService {
 
     @Override
     public List<Resource> completeScan(IModuleLayerManager layerManager) {
-        return this.serviceException == null ? this.actualTransformationService.completeScan(layerManager) : List.of();
+        if (this.serviceException == null) {
+            try {
+                return this.actualTransformationService.completeScan(layerManager);
+            } catch (Throwable t) {
+                LOGGER.error("Error launching Koremods instance", t);
+                this.serviceException = t;
+            }
+        }
+        return List.of();
     }
 
     @Override
@@ -113,7 +121,15 @@ public class KoremodsServiceWrapper implements ITransformationService {
     @SuppressWarnings("rawtypes")
     @Override
     public List<ITransformer> transformers() {
-        return this.serviceException == null ? this.actualTransformationService.transformers() : List.of();
+        if (this.serviceException == null) {
+            try {
+                return this.actualTransformationService.transformers();
+            } catch (Throwable t) {
+                LOGGER.error("Error launching Koremods instance", t);
+                this.serviceException = t;
+            }
+        }
+        return List.of();
     }
 
     private Path getJarInJar(Path path, Attributes attributes, String name) {
