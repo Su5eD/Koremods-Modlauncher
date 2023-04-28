@@ -1,7 +1,7 @@
 /*
  * This file is part of Koremods, licensed under the MIT License
  *
- * Copyright (c) 2021-2022 Garden of Fancy
+ * Copyright (c) 2021-2023 Garden of Fancy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,27 +58,28 @@ object ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
         val modList = FMLLoader.getLoadingModList()
         val mods = modList.mods
             .map(IModInfo::getModId)
-            .associateWith { modid -> modList.getModFileById(modid).file.filePath }
-        
+            .associateWith { modid -> modList.getModFileById(modid).file.filePath.toAbsolutePath().normalize() }
+
         LOGGER.info("Verifying script packs")
 
         KoremodsLaunch.LOADER!!.scriptPacks.forEach { pack ->
             mods.forEach { (modid, source) ->
-                if (pack.namespace == modid && pack.path.normalize().toAbsolutePath() != source) {
+                val packPath = pack.path.toAbsolutePath().normalize()
+                if (pack.namespace == modid && packPath != source) {
+                    LOGGER.error("Expected path $source, got $packPath")
                     throw RuntimeException("Source location of namespace '${pack.namespace}' doesn't match the location of its mod")
-                } else if (pack.path == source && pack.namespace != modid) {
+                } else if (packPath == source && pack.namespace != modid) {
                     throw RuntimeException("Namespace '${pack.namespace}' doesn't match the modid '$modid' found at the same location")
                 }
             }
         }
     }
-    
+
     private fun getPathToScript(base: Path): Path {
         if (base.fileSystem == DEFAULT_FS) {
             return SecureJar.from(base).rootPath
-        }
-        else if (base.fileSystem.provider().scheme == "jar") {
-            val uri = base.toUri().schemeSpecificPart.removePrefix("file://").let { str -> 
+        } else if (base.fileSystem.provider().scheme == "jar") {
+            val uri = base.toUri().schemeSpecificPart.removePrefix("file://").let { str ->
                 if (SystemUtils.IS_OS_WINDOWS) str.removePrefix("/")
                 else str
             }

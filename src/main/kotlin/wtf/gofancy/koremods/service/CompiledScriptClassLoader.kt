@@ -1,7 +1,7 @@
 /*
  * This file is part of Koremods, licensed under the MIT License
  *
- * Copyright (c) 2021-2022 Garden of Fancy
+ * Copyright (c) 2021-2023 Garden of Fancy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 package wtf.gofancy.koremods.service
 
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Path
 import java.security.ProtectionDomain
@@ -43,6 +44,8 @@ class CompiledScriptClassLoader(private val path: Path, parent: ClassLoader?) : 
         return try {
             path.resolve(name).inputStream()
         } catch (e: NoSuchFileException) {
+            null
+        } catch (e: FileNotFoundException) {
             null
         }
     }
