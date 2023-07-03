@@ -26,7 +26,7 @@ package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.jarhandling.SecureJar
 import net.minecraftforge.fml.loading.FMLLoader
-import net.minecraftforge.fml.loading.progress.StartupMessageManager
+import net.minecraftforge.fml.loading.progress.StartupNotificationManager
 import net.minecraftforge.forgespi.language.IModInfo
 import org.apache.commons.lang3.SystemUtils
 import org.apache.logging.log4j.Level
@@ -93,7 +93,7 @@ class ModlauncherKoremodsLaunchPlugin : KoremodsLaunchPlugin {
     )
 
     override fun appendLogMessage(level: Level, message: String) {
-        StartupMessageManager.addModMessage("[Koremods] $message")
+        StartupNotificationManager.addModMessage("[Koremods] $message")
     }
 
     override fun createCompiledScriptClassLoader(path: Path, parent: ClassLoader?): ClassLoader {

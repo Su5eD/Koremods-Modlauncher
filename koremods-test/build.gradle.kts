@@ -20,7 +20,6 @@ minecraft {
                 )
             )
             workingDirectory = project.file("run").canonicalPath
-            forceExit = false
         }
     }
 }

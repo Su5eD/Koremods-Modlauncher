@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[43,)"
+loaderVersion="[47,)"
 license="MIT"
 issueTrackerURL="https://gitlab.com/gofancy/koremods/koremods-modlauncher/-/issues"
 [[mods]]
@@ -14,12 +14,12 @@ description="A Kotlin Script bytecode manipulation framework."
 [[dependencies.koremods]]
     modId="forge"
     mandatory=true
-    versionRange="[43,)"
+    versionRange="[47,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.koremods]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.19, 1.20)"
+    versionRange="[1.20, 1.21)"
     ordering="NONE"
     side="BOTH"

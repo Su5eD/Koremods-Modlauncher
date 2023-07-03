@@ -14,6 +14,7 @@ pluginManagement {
     plugins {
         val kotlinVersion: String by settings
         kotlin("jvm") version kotlinVersion apply false
+        id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.+"
     }
 }
 
