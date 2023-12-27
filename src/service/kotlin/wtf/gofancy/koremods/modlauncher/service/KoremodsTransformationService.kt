@@ -28,8 +28,8 @@ import cpw.mods.modlauncher.api.IEnvironment
 import cpw.mods.modlauncher.api.IModuleLayerManager
 import cpw.mods.modlauncher.api.ITransformationService
 import cpw.mods.modlauncher.api.ITransformer
-import net.minecraftforge.fml.loading.targets.CommonLaunchHandler
-import net.minecraftforge.fml.loading.targets.CommonUserdevLaunchHandler
+import net.neoforged.fml.loading.targets.CommonLaunchHandler
+import net.neoforged.fml.loading.targets.CommonUserdevLaunchHandler
 import wtf.gofancy.koremods.EvalLoad
 import wtf.gofancy.koremods.launch.KoremodsLaunch
 import java.nio.file.Path

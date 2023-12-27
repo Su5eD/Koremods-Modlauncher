@@ -1,9 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.matthewprenger.cursegradle.CurseArtifact
-import com.matthewprenger.cursegradle.CurseProject
-import net.minecraftforge.gradle.common.util.RunConfig
+import me.modmuss50.mpp.ReleaseType
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import wtf.gofancy.koremods.gradle.KoremodsGradlePlugin
@@ -12,14 +10,13 @@ import java.util.*
 plugins {
     kotlin("jvm")
     `maven-publish`
-    id("net.minecraftforge.gradle") version "[6.0,6.2)"
-    id("wtf.gofancy.koremods.gradle") version "0.2.0" apply false
+    id("net.neoforged.gradle.userdev") version "7.0.+"
+    id("wtf.gofancy.koremods.gradle") version "2.0.0" apply false
     id("com.github.johnrengelman.shadow") version "8.1.+" apply false
     id("org.cadixdev.licenser") version "0.6.1"
     id("wtf.gofancy.git-changelog") version "1.1.+"
     id("me.qoomon.git-versioning") version "6.3.+"
-    id("com.matthewprenger.cursegradle") version "1.4.+"
-    id("com.modrinth.minotaur") version "2.+"
+    id("me.modmuss50.mod-publish-plugin") version "0.3.+"
 }
 
 group = "wtf.gofancy.koremods"
@@ -39,11 +36,9 @@ java {
 val kotlinVersion: String by project
 val koremodsScriptVersion: String by project
 val minecraftVersion: String by project
-val forgeVersion: String by project
+val neoVersion: String by project
 val curseForgeProjectID: String by project
 val modrinthProjectID: String by project
-val publishReleaseType = System.getenv("PUBLISH_RELEASE_TYPE") ?: "release"
-val changelogText = provider { changelog.generateChangelog(1, true) }
 
 val manifestAttributes = mapOf(
     "Specification-Title" to project.name,
@@ -121,7 +116,7 @@ configurations {
     }
 
     "modImplementation" {
-        extendsFrom(minecraft.get())
+        extendsFrom(implementation.get())
     }
 
     "serviceImplementation" {
@@ -145,26 +140,19 @@ configurations {
     }
 }
 
-minecraft {
-    mappings("official", minecraftVersion)
+println("Configured version: $version, Java: ${System.getProperty("java.version")}, JVM: ${System.getProperty("java.vm.version")} (${System.getProperty("java.vendor")}), Arch: ${System.getProperty("os.arch")}")
+runs {
+    configureEach {
+        systemProperty("forge.logging.markers", "REGISTRIES")
+        systemProperty("forge.logging.console.level", "debug")
 
-    runs {
-        val config = Action<RunConfig> {
-            properties(
-                mapOf(
-                    "forge.logging.markers" to "REGISTRIES",
-                    "forge.logging.console.level" to "debug"
-                )
-            )
-            workingDirectory = project.file("run").canonicalPath
+        modSource(mod)
+    }
 
-            lazyToken("minecraft_classpath") {
-                fullJar.get().archiveFile.get().asFile.absolutePath
-            }
-        }
+    create("client")
 
-        create("client", config)
-        create("server", config)
+    create("server") {
+        programArgument("--nogui")
     }
 }
 
@@ -177,7 +165,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "$minecraftVersion-$forgeVersion")
+    implementation(group = "net.neoforged", name = "neoforge", version = neoVersion)
 
     shadeKotlin(kotlin("stdlib"))
     shadeKotlin(kotlin("stdlib-jdk8"))
@@ -292,26 +280,22 @@ publishing {
     }
 }
 
-curseforge {
-    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "UNKNOWN"
-    project(closureOf<CurseProject> {
-        id = curseForgeProjectID
-        changelogType = "markdown"
-        changelog = changelogText.get()
-        releaseType = publishReleaseType
-        mainArtifact(fullJar.get(), closureOf<CurseArtifact> {
-            displayName = "Koremods ${project.version}"
-        })
-        addGameVersion("Forge")
-        addGameVersion(minecraftVersion)
-    })
-}
+publishMods {
+    file.set(fullJar.flatMap { it.archiveFile })
+    changelog.set(provider { project.changelog.generateChangelog(1, true) })
+    type.set(providers.environmentVariable("PUBLISH_RELEASE_TYPE").map(ReleaseType::of).orElse(ReleaseType.STABLE))
+    modLoaders.add("forge")
+    dryRun.set(!providers.environmentVariable("CI").isPresent)
+    displayName.set("Koremods ${project.version}")
 
-modrinth {
-    token.set(System.getenv("MODRINTH_TOKEN"))
-    projectId.set(modrinthProjectID)
-    versionName.set("Koremods ${project.version}")
-    versionType.set(publishReleaseType)
-    uploadFile.set(fullJar.get())
-    changelog.set(changelogText)
+    curseforge {
+        accessToken.set(providers.environmentVariable("CURSEFORGE_TOKEN"))
+        projectId.set(curseForgeProjectID)
+        minecraftVersions.add(minecraftVersion)
+    }
+    modrinth {
+        accessToken.set(providers.environmentVariable("MODRINTH_TOKEN"))
+        projectId.set(modrinthProjectID)
+        minecraftVersions.add(minecraftVersion)
+    }
 }

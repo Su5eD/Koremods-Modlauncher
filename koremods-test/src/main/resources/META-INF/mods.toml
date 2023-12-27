@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="[1,)"
 license="MIT"
 [[mods]]
 modId="koremods_test"
@@ -9,20 +9,20 @@ authors="Su5eD"
 description="Game Testing Koremods"
 
 [[dependencies.koremods_test]]
-    modId="forge"
-    mandatory=true
-    versionRange="[47,)"
+    modId="neoforge"
+    type="required"
+    versionRange="[20.4, 20.5)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.koremods_test]]
     modId="minecraft"
-    mandatory=true
-    versionRange="[1.20, 1.21)"
+    type="required"
+    versionRange="[1.20.4,1.21)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.koremods_test]]
     modId="koremods"
-    mandatory=true
-    versionRange="[0.6, 0.7)"
+    type="required"
+    versionRange="[1.0, )"
     ordering="NONE"
     side="BOTH"

@@ -1,6 +1,6 @@
 package wtf.gofancy.koremods.test;
 
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 
 @Mod(KoremodsTestMod.MODID)
 public class KoremodsTestMod {

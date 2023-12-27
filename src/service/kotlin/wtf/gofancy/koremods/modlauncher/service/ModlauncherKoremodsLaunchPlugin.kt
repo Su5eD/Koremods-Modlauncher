@@ -25,9 +25,9 @@
 package wtf.gofancy.koremods.modlauncher.service
 
 import cpw.mods.jarhandling.SecureJar
-import net.minecraftforge.fml.loading.FMLLoader
-import net.minecraftforge.fml.loading.progress.StartupNotificationManager
-import net.minecraftforge.forgespi.language.IModInfo
+import net.neoforged.fml.loading.FMLLoader
+import net.neoforged.fml.loading.progress.StartupNotificationManager
+import net.neoforged.neoforgespi.language.IModInfo
 import org.apache.commons.lang3.SystemUtils
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager

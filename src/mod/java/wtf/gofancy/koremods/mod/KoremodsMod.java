@@ -27,7 +27,7 @@ package wtf.gofancy.koremods.mod;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.TransformationServiceDecorator;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import wtf.gofancy.koremods.modlauncher.bootstrap.KoremodsServiceWrapper;

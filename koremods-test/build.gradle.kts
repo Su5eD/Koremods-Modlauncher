@@ -1,26 +1,25 @@
 plugins {
     java
-    id("net.minecraftforge.gradle")
+    id("net.neoforged.gradle.userdev")
     id("wtf.gofancy.koremods.gradle")
 }
 
 val minecraftVersion: String by project
-val forgeVersion: String by project
+val neoVersion: String by project
 
-minecraft {
-    mappings("official", minecraftVersion)
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+}
 
-    runs {
-        create("gameTestServer") {
-            properties(
-                mapOf(
-                    "forge.logging.markers" to "REGISTRIES",
-                    "forge.logging.console.level" to "debug",
-                    "forge.enabledGameTestNamespaces" to "koremods_test"
-                )
+runs {
+    create("server") {
+        systemProperties(
+            mapOf(
+                "forge.logging.markers" to "REGISTRIES",
+                "forge.logging.console.level" to "debug",
+                "forge.enabledGameTestNamespaces" to "koremods_test"
             )
-            workingDirectory = project.file("run").canonicalPath
-        }
+        )
     }
 }
 
@@ -33,7 +32,7 @@ repositories {
 }
 
 dependencies {
-    minecraft(group = "net.minecraftforge", name = "forge", version = "$minecraftVersion-$forgeVersion")
+    implementation(group = "net.neoforged", name = "neoforge", version = neoVersion)
 
     koremods(project(":"))
 }

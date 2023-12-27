@@ -2,7 +2,7 @@ package wtf.gofancy.koremods.test;
 
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraftforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.GameTestHolder;
 
 @GameTestHolder(KoremodsTestMod.MODID)
 public class KoremodsGameTests {
